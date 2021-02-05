@@ -6,6 +6,7 @@ import (
 	"github.com/Kmotiko/gofc"
 	"github.com/Kmotiko/gofc/ofprotocol/ofp13"
 	"github.com/digitalocean/go-openvswitch/ovs"
+	"github.com/vishvananda/netlink"
 )
 
 // OFSwitch is a struct to manage openflow switch
@@ -13,6 +14,7 @@ type OFSwitch struct {
 	Name          string
 	ControllerURL string
 	client        *ovs.Client
+	link          *netlink.Link
 }
 
 // NewOFSwitch creates openflow switch
@@ -27,7 +29,14 @@ func NewOFSwitch(switchName string) *OFSwitch {
 
 // Create ovs
 func (s *OFSwitch) Create() error {
-	return s.client.VSwitch.AddBridge(s.Name)
+	err := s.client.VSwitch.AddBridge(s.Name)
+	if err != nil {
+		return err
+	}
+
+	link, err := netlink.LinkByName(s.Name)
+	s.link = &link
+	return err
 }
 
 // Remove ovs

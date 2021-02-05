@@ -34,6 +34,11 @@ func TestCreate(t *testing.T) {
 		t.Fatalf("failed test %#v", err)
 	}
 
+	linkName := (*ofs.link).Attrs().Name
+	if linkName != ofs.Name {
+		t.Fatalf("failed test expected %v actual %v", ofs.Name, linkName)
+	}
+
 	exist, err := ovsBridgeExists(ofs.Name)
 	if err != nil {
 		t.Fatalf("failed test %#v", err)

@@ -6,4 +6,5 @@ require (
 	github.com/Kmotiko/gofc v0.0.0-20190902011257-857358e251a4
 	github.com/digitalocean/go-openvswitch v0.0.0-20201214180534-ce0f183468d8
 	github.com/mattn/go-pipeline v0.0.0-20190323144519-32d779b32768
+	github.com/vishvananda/netlink v1.1.0
 )
