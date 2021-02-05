@@ -2,15 +2,16 @@ package ofswitch
 
 import (
 	"fmt"
-	"os/exec"
 
 	"github.com/Kmotiko/gofc"
 	"github.com/Kmotiko/gofc/ofprotocol/ofp13"
+	"github.com/digitalocean/go-openvswitch/ovs"
 )
 
 // OFSwitch is a struct to manage openflow switch
 type OFSwitch struct {
-	Name string
+	Name   string
+	client *ovs.Client
 }
 
 // NewOFSwitch creates openflow switch
@@ -18,14 +19,19 @@ func NewOFSwitch(switchName string) *OFSwitch {
 	ofs := new(OFSwitch)
 
 	ofs.Name = switchName
+	ofs.client = ovs.New()
 
 	return ofs
 }
 
 // Create ovs
 func (s *OFSwitch) Create() error {
-	cmd := exec.Command("ovs-vsctl", "add-br", s.Name)
-	return cmd.Run()
+	return s.client.VSwitch.AddBridge(s.Name)
+}
+
+// Remove ovs
+func (s *OFSwitch) Remove() error {
+	return s.client.VSwitch.DeleteBridge(s.Name)
 }
 
 func (c *OFSwitch) HandleSwitchFeatures(msg *ofp13.OfpSwitchFeatures, dp *gofc.Datapath) {
