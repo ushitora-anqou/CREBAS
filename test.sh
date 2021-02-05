@@ -9,4 +9,4 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-sudo docker run -v $PROJECT_DIR:/CREBAS --rm crebas-test
+sudo docker run -v $PROJECT_DIR:/CREBAS --rm --cap-add=NET_ADMIN crebas-test
