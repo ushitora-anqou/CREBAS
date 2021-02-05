@@ -10,8 +10,9 @@ import (
 
 // OFSwitch is a struct to manage openflow switch
 type OFSwitch struct {
-	Name   string
-	client *ovs.Client
+	Name          string
+	ControllerURL string
+	client        *ovs.Client
 }
 
 // NewOFSwitch creates openflow switch
@@ -32,6 +33,12 @@ func (s *OFSwitch) Create() error {
 // Remove ovs
 func (s *OFSwitch) Remove() error {
 	return s.client.VSwitch.DeleteBridge(s.Name)
+}
+
+// SetController for ovs
+func (s *OFSwitch) SetController(controllerURL string) error {
+	s.ControllerURL = controllerURL
+	return s.client.VSwitch.SetController(s.Name, s.ControllerURL)
 }
 
 func (c *OFSwitch) HandleSwitchFeatures(msg *ofp13.OfpSwitchFeatures, dp *gofc.Datapath) {
