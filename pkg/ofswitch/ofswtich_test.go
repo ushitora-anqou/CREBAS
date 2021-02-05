@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/digitalocean/go-openvswitch/ovs"
+	"github.com/vishvananda/netlink"
 )
 
 func ovsBridgeExists(bridgeName string) (bool, error) {
@@ -34,7 +35,7 @@ func TestCreate(t *testing.T) {
 		t.Fatalf("failed test %#v", err)
 	}
 
-	linkName := (*ofs.link).Attrs().Name
+	linkName := ofs.link.Attrs().Name
 	if linkName != ofs.Name {
 		t.Fatalf("failed test expected %v actual %v", ofs.Name, linkName)
 	}
@@ -92,4 +93,45 @@ func TestSetController(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
+}
+
+func TestSetAddressV4(t *testing.T) {
+	ovsName := "ovs-test-set"
+	ofs := NewOFSwitch(ovsName)
+	err := ofs.Create()
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+
+	addr, err := netlink.ParseAddr("192.168.10.1/24")
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+	err = ofs.SetAddr(addr)
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+
+	link, err := netlink.LinkByName(ofs.Name)
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+
+	addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+
+	err = ofs.Remove()
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+
+	for _, ad := range addrs {
+		if ad.Equal(*addr) {
+			return
+		}
+	}
+
+	t.Fatalf("failed test %#v does not found", addr.String())
 }

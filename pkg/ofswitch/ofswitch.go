@@ -13,8 +13,9 @@ import (
 type OFSwitch struct {
 	Name          string
 	ControllerURL string
+	IPAddr        *netlink.Addr
 	client        *ovs.Client
-	link          *netlink.Link
+	link          netlink.Link
 }
 
 // NewOFSwitch creates openflow switch
@@ -35,7 +36,7 @@ func (s *OFSwitch) Create() error {
 	}
 
 	link, err := netlink.LinkByName(s.Name)
-	s.link = &link
+	s.link = link
 	return err
 }
 
@@ -48,6 +49,16 @@ func (s *OFSwitch) Remove() error {
 func (s *OFSwitch) SetController(controllerURL string) error {
 	s.ControllerURL = controllerURL
 	return s.client.VSwitch.SetController(s.Name, s.ControllerURL)
+}
+
+// SetAddr configure ip(v4/v6) for ovs
+func (s *OFSwitch) SetAddr(addr *netlink.Addr) error {
+	err := netlink.AddrAdd(s.link, addr)
+	if err != nil {
+		return err
+	}
+	s.IPAddr = addr
+	return nil
 }
 
 func (c *OFSwitch) HandleSwitchFeatures(msg *ofp13.OfpSwitchFeatures, dp *gofc.Datapath) {
