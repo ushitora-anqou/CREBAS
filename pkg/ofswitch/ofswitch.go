@@ -64,6 +64,7 @@ func (s *OFSwitch) SetAddr(addr *netlink.Addr) error {
 	return nil
 }
 
+// HandleSwitchFeatures handle ovs features
 func (c *OFSwitch) HandleSwitchFeatures(msg *ofp13.OfpSwitchFeatures, dp *gofc.Datapath) {
 	// create match
 	ethdst, _ := ofp13.NewOxmEthDst("00:00:00:00:00:00")
@@ -106,6 +107,7 @@ func (c *OFSwitch) HandleSwitchFeatures(msg *ofp13.OfpSwitchFeatures, dp *gofc.D
 	dp.Send(mp)
 }
 
+// HandleAggregateStatsReply reply some
 func (c *OFSwitch) HandleAggregateStatsReply(msg *ofp13.OfpMultipartReply, dp *gofc.Datapath) {
 	fmt.Println("Handle AggregateStats")
 	for _, mp := range msg.Body {
@@ -117,6 +119,7 @@ func (c *OFSwitch) HandleAggregateStatsReply(msg *ofp13.OfpMultipartReply, dp *g
 	}
 }
 
+// AttackLink attaches link to ovs
 func (c *OFSwitch) AttachLink(linkExt *netlinkext.LinkExt) error {
 	switch link := linkExt.GetLink().(type) {
 	case *netlink.Veth:
