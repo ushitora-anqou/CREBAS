@@ -13,6 +13,7 @@ type LinkExt struct {
 	link      netlink.Link
 	addr      *netlink.Addr
 	namespace string
+	Ofport    int
 }
 
 // NewLinkExtVeth creates veth LinkExt
@@ -35,6 +36,14 @@ func (l *LinkExt) Create() error {
 		return err
 	}
 
+	link, err := netlink.LinkByName(l.link.Attrs().Name)
+	if err != nil {
+		return err
+	}
+	vethLink := link.(*netlink.Veth)
+	vethLink.PeerName = l.link.(*netlink.Veth).PeerName
+
+	l.link = vethLink
 	return nil
 }
 
@@ -119,4 +128,9 @@ func (l *LinkExt) Delete() error {
 
 	err := netlink.LinkDel(l.link)
 	return err
+}
+
+// GetLink returns link
+func (l *LinkExt) GetLink() netlink.Link {
+	return l.link
 }

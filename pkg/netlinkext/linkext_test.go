@@ -30,6 +30,10 @@ func TestConfigureVethWithNetns(t *testing.T) {
 		t.Fatalf("Failed %#v", err)
 	}
 
+	if pName := linkExt.link.(*netlink.Veth).PeerName; pName != peerName {
+		t.Fatalf("Failed expected:%v acutal:%v", peerName, pName)
+	}
+
 	_, err = netlink.LinkByName(peerName)
 	if err != nil {
 		t.Fatalf("Failed %#v", err)

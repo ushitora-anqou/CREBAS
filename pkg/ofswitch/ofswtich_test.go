@@ -4,7 +4,9 @@ import (
 	"testing"
 
 	"github.com/digitalocean/go-openvswitch/ovs"
+	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 	"github.com/vishvananda/netlink"
+	"github.com/vishvananda/netns"
 )
 
 func ovsBridgeExists(bridgeName string) (bool, error) {
@@ -55,7 +57,7 @@ func TestCreateAndRemove(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
-	err = ofs.Remove()
+	err = ofs.Delete()
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
@@ -89,7 +91,7 @@ func TestSetController(t *testing.T) {
 		t.Fatalf("failed to test expected localhost:6655 actual %v", controllerURL)
 	}
 
-	err = ofs.Remove()
+	err = ofs.Delete()
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
@@ -122,7 +124,7 @@ func TestSetAddressV4(t *testing.T) {
 		t.Fatalf("failed test %#v", err)
 	}
 
-	err = ofs.Remove()
+	err = ofs.Delete()
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
@@ -134,4 +136,58 @@ func TestSetAddressV4(t *testing.T) {
 	}
 
 	t.Fatalf("failed test %#v does not found", addr.String())
+}
+
+func TestAttachLink(t *testing.T) {
+	linkName := "veth-test"
+	peerName := "veth-test-peer"
+	netnsName := "netns-test"
+	ovsName := "ovs-test-set"
+
+	ofs := NewOFSwitch(ovsName)
+	err := ofs.Create()
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+
+	linkExt := netlinkext.NewLinkExtVeth(linkName, peerName)
+	handle, err := netlinkext.CreateNetns(netnsName)
+	if err != nil {
+		t.Fatalf("Failed %#v", err)
+	}
+	defer handle.Close()
+
+	err = linkExt.Create()
+	if err != nil {
+		t.Fatalf("Failed %#v", err)
+	}
+
+	err = linkExt.SetNsByName(netnsName)
+	if err != nil {
+		t.Fatalf("Failed %#v", err)
+	}
+
+	err = ofs.AttachLink(linkExt)
+	if err != nil {
+		t.Fatalf("Failed %#v", err)
+	}
+
+	if linkExt.Ofport != 1 {
+		t.Fatalf("Failed expected:1 actual:%v", linkExt.Ofport)
+	}
+
+	err = linkExt.Delete()
+	if err != nil {
+		t.Fatalf("Failed %#v", err)
+	}
+
+	err = netns.DeleteNamed(netnsName)
+	if err != nil {
+		t.Fatalf("Failed %#v", err)
+	}
+
+	err = ofs.Delete()
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
 }

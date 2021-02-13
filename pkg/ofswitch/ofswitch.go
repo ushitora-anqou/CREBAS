@@ -6,6 +6,7 @@ import (
 	"github.com/Kmotiko/gofc"
 	"github.com/Kmotiko/gofc/ofprotocol/ofp13"
 	"github.com/digitalocean/go-openvswitch/ovs"
+	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 	"github.com/vishvananda/netlink"
 )
 
@@ -16,6 +17,7 @@ type OFSwitch struct {
 	IPAddr        *netlink.Addr
 	client        *ovs.Client
 	link          netlink.Link
+	ports         *netlinkext.LinkCollection
 }
 
 // NewOFSwitch creates openflow switch
@@ -24,6 +26,7 @@ func NewOFSwitch(switchName string) *OFSwitch {
 
 	ofs.Name = switchName
 	ofs.client = ovs.New()
+	ofs.ports = netlinkext.NewLinkCollection()
 
 	return ofs
 }
@@ -40,8 +43,8 @@ func (s *OFSwitch) Create() error {
 	return err
 }
 
-// Remove ovs
-func (s *OFSwitch) Remove() error {
+// Delete ovs
+func (s *OFSwitch) Delete() error {
 	return s.client.VSwitch.DeleteBridge(s.Name)
 }
 
@@ -112,4 +115,21 @@ func (c *OFSwitch) HandleAggregateStatsReply(msg *ofp13.OfpMultipartReply, dp *g
 			fmt.Println(obj.FlowCount)
 		}
 	}
+}
+
+func (c *OFSwitch) AttachLink(linkExt *netlinkext.LinkExt) error {
+	switch link := linkExt.GetLink().(type) {
+	case *netlink.Veth:
+		c.client.VSwitch.AddPort(c.Name, link.PeerName)
+		ofport, err := getOFPortByLinkName(link.PeerName)
+		if err != nil {
+			return err
+		}
+		linkExt.Ofport = ofport
+	default:
+		return fmt.Errorf("Unknown link type:%T", link)
+	}
+
+	c.ports.Add(linkExt)
+	return nil
 }
