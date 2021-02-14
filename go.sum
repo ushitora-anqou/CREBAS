@@ -12,6 +12,8 @@ github.com/clipperhouse/typewriter v0.0.0-20200107164453-d21420026310 h1:IC0Ywh0
 github.com/clipperhouse/typewriter v0.0.0-20200107164453-d21420026310/go.mod h1:GbdR1VEFLckXDXyXO3pn/lERXrQLVOI9j1Fly05g32I=
 github.com/digitalocean/go-openvswitch v0.0.0-20201214180534-ce0f183468d8 h1:RQAD2flP6n+U5sAudMpru+EuLJ6VQduu6yenl6LwM5E=
 github.com/digitalocean/go-openvswitch v0.0.0-20201214180534-ce0f183468d8/go.mod h1:MpzfscrezUxa94/T4sy2tDaxB+hQ6w0EmRBPv+xHWEs=
+github.com/google/uuid v1.2.0 h1:qJYtXnJRWmpe7m/3XlyhrsLrEURqHRM2kxzoxXqyUDs=
+github.com/google/uuid v1.2.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/mattn/go-pipeline v0.0.0-20190323144519-32d779b32768 h1:uZ41sUUU0/vDwBwMVz7O1jtcSyLFn/AeUdMr9MKcDsc=
 github.com/mattn/go-pipeline v0.0.0-20190323144519-32d779b32768/go.mod h1:THCMZVX5asLpinN+6hFlR1xKFcFsaDpAtUltGqZauBM=
 github.com/vishvananda/netlink v1.1.0 h1:1iyaYNBLmP6L0220aDnYQpo1QEV4t4hJ+xEEhhJH8j0=
