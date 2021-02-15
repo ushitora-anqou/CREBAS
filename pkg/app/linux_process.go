@@ -71,6 +71,11 @@ func (p *LinuxProcess) Stop() error {
 	return nil
 }
 
+// ID returns app's id
+func (p *LinuxProcess) ID() uuid.UUID {
+	return p.id
+}
+
 // AddLink adds link
 func (p *LinuxProcess) AddLink(ofs *ofswitch.OFSwitch) (*netlinkext.LinkExt, error) {
 	linkUUID, err := uuid.NewRandom()
