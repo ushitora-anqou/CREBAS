@@ -46,6 +46,15 @@ func (p *LinuxProcess) Create() error {
 
 // Delete deletes process
 func (p *LinuxProcess) Delete() error {
+	links := p.links.Where(func(link *netlinkext.LinkExt) bool { return true })
+	for _, link := range links {
+		fmt.Println("HOGE")
+		err := link.Delete()
+		if err != nil {
+			return err
+		}
+	}
+
 	return netns.DeleteNamed(p.namespace)
 }
 

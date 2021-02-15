@@ -7,17 +7,11 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 	"github.com/naoki9911/CREBAS/pkg/ofswitch"
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netns"
 )
-
-func TestCreateVethPeer(t *testing.T) {
-	err := createVethPeer("test-peer-a", "test-peer-b")
-	if err != nil {
-		t.Fatalf("Failed to create veth peer %#v", err)
-	}
-}
 
 func TestStartAndStopProcess(t *testing.T) {
 	p := NewLinuxProcess()
@@ -49,6 +43,14 @@ func TestStartAndStopProcess(t *testing.T) {
 	err = proc.Signal(syscall.Signal(0))
 	if err == nil {
 		t.Fatalf("pid %v exists", p.pid)
+	}
+
+	for _, link := range p.links.Where(func(l *netlinkext.LinkExt) bool { return true }) {
+		peerLinkName := link.GetLink().(*netlink.Veth).PeerName
+		_, err = netlink.LinkByName(peerLinkName)
+		if err == nil {
+			t.Fatalf("veth link %v exists", peerLinkName)
+		}
 	}
 
 	_, err = netns.GetFromName(p.namespace)
