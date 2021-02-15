@@ -81,6 +81,7 @@ func (l *LinkExt) SetAddr(addr *netlink.Addr) error {
 		if err != nil {
 			return err
 		}
+		defer rootNetns.Close()
 
 		err = netns.Set(handle)
 		if err != nil {
@@ -88,7 +89,6 @@ func (l *LinkExt) SetAddr(addr *netlink.Addr) error {
 			return err
 		}
 		defer netns.Set(rootNetns)
-		defer rootNetns.Close()
 	}
 
 	err := netlink.AddrAdd(l.link, addr)
@@ -116,6 +116,7 @@ func (l *LinkExt) Delete() error {
 		if err != nil {
 			return err
 		}
+		defer rootNetns.Close()
 
 		err = netns.Set(handle)
 		if err != nil {
@@ -123,7 +124,6 @@ func (l *LinkExt) Delete() error {
 			return err
 		}
 		defer netns.Set(rootNetns)
-		defer rootNetns.Close()
 	}
 
 	err := netlink.LinkDel(l.link)
@@ -133,4 +133,55 @@ func (l *LinkExt) Delete() error {
 // GetLink returns link
 func (l *LinkExt) GetLink() netlink.Link {
 	return l.link
+}
+
+// SetLinkUp sets link up
+func (l *LinkExt) SetLinkUp() error {
+	if l.namespace != "" {
+		runtime.LockOSThread()
+		defer runtime.UnlockOSThread()
+
+		rootNetns, err := netns.Get()
+		if err != nil {
+			return err
+		}
+		defer rootNetns.Close()
+
+		handle, err := netns.GetFromName(l.namespace)
+		if err != nil {
+			return err
+		}
+		defer handle.Close()
+
+		err = netns.Set(handle)
+		if err != nil {
+			rootNetns.Close()
+			return err
+		}
+		defer netns.Set(rootNetns)
+	}
+
+	err := netlink.LinkSetUp(l.link)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SetLinkPeerUp set veth peer link up
+func (l *LinkExt) SetLinkPeerUp() error {
+	peerName := l.link.(*netlink.Veth).PeerName
+
+	link, err := netlink.LinkByName(peerName)
+	if err != nil {
+		return err
+	}
+
+	err = netlink.LinkSetUp(link)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

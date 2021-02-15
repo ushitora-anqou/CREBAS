@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/naoki9911/CREBAS/pkg/netlinkext"
+	"github.com/naoki9911/CREBAS/pkg/ofswitch"
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netns"
 )
@@ -70,9 +71,44 @@ func (p *LinuxProcess) Stop() error {
 	return nil
 }
 
-func (p *LinuxProcess) addLink(name string) error {
+// AddLink adds link
+func (p *LinuxProcess) AddLink(ofs *ofswitch.OFSwitch) (*netlinkext.LinkExt, error) {
+	linkUUID, err := uuid.NewRandom()
+	if err != nil {
+		return nil, err
+	}
+	linkName := linkUUID.String()[0:8]
+	peerName := linkName + "-p"
 
-	return nil
+	link := netlinkext.NewLinkExtVeth(linkName, peerName)
+	err = link.Create()
+	if err != nil {
+		return nil, err
+	}
+
+	err = link.SetNsByName(p.namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ofs.AttachLink(link)
+	if err != nil {
+		return nil, err
+	}
+
+	err = link.SetLinkPeerUp()
+	if err != nil {
+		return nil, err
+	}
+
+	err = link.SetLinkUp()
+	if err != nil {
+		return nil, err
+	}
+
+	p.links.Add(link)
+
+	return link, nil
 }
 
 func (p *LinuxProcess) execCmdWithNetns() error {

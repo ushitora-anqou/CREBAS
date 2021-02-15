@@ -39,7 +39,12 @@ func (s *OFSwitch) Create() error {
 	}
 
 	link, err := netlink.LinkByName(s.Name)
+	if err != nil {
+		return err
+	}
 	s.link = link
+
+	err = netlink.LinkSetUp(link)
 	return err
 }
 

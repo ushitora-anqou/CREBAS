@@ -21,7 +21,7 @@ func getOFPortByLinkName(name string) (int, error) {
 	if !strings.Contains(nameCol, "name") {
 		return -1, fmt.Errorf("Failed to parse name column %v", nameCol)
 	}
-	nameRes := strings.Trim(strings.Split(nameCol, ":")[1], " ")
+	nameRes := strings.Trim(strings.Trim(strings.Split(nameCol, ":")[1], " "), "\"")
 
 	if !strings.Contains(portCol, "ofport") {
 		return -1, fmt.Errorf("Failed to parse ofport column %v", portCol)
@@ -32,7 +32,7 @@ func getOFPortByLinkName(name string) (int, error) {
 		return -1, err
 	}
 
-	if nameRes != name {
+	if string(nameRes) != string(name) {
 		return -1, fmt.Errorf("Failed expected:%v actual:%v", name, nameRes)
 	}
 
