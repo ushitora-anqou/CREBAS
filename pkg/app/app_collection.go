@@ -51,3 +51,23 @@ func (c *AppCollection) GetByIndex(index int) AppInterface {
 func (c *AppCollection) Where(fn func(AppInterface) bool) AppSlice {
 	return c.collection.Where(fn)
 }
+
+// GetAll returns all apps
+func (c *AppCollection) GetAll() []AppInterface {
+	apps := []AppInterface{}
+	for idx := range c.collection {
+		apps = append(apps, c.collection[idx])
+	}
+
+	return apps
+}
+
+// GetAllAppInfos returns all apps info
+func (c *AppCollection) GetAllAppInfos() []*AppInfo {
+	apps := []*AppInfo{}
+	for idx := range c.collection {
+		apps = append(apps, c.collection[idx].GetAppInfo())
+	}
+
+	return apps
+}

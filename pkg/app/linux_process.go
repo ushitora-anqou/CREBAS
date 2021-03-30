@@ -85,6 +85,15 @@ func (p *LinuxProcess) ID() uuid.UUID {
 	return p.id
 }
 
+// GetAppInfo returns appInfo
+func (p *LinuxProcess) GetAppInfo() *AppInfo {
+	appInfo := AppInfo{
+		Id: p.id,
+	}
+
+	return &appInfo
+}
+
 // AddLink adds link
 func (p *LinuxProcess) AddLink(ofs *ofswitch.OFSwitch) (*netlinkext.LinkExt, error) {
 	linkUUID, err := uuid.NewRandom()

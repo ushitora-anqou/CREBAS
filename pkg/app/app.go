@@ -8,4 +8,9 @@ type AppInterface interface {
 	Start() error
 	Stop() error
 	ID() uuid.UUID
+	GetAppInfo() *AppInfo
+}
+
+type AppInfo struct {
+	Id uuid.UUID `json:"id"`
 }
