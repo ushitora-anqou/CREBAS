@@ -1,9 +1,13 @@
 package app
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 // AppCollection is a collection for app
 type AppCollection struct {
+	mu         sync.Mutex
 	collection AppSlice
 }
 
@@ -16,11 +20,15 @@ func NewAppCollection() *AppCollection {
 
 // Add adds app to collection
 func (c *AppCollection) Add(app AppInterface) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.collection = append(c.collection, app)
 }
 
 // Remove removes link from collection
 func (c *AppCollection) Remove(app AppInterface) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	removeIndex := -1
 	for idx, l := range c.collection {
 		if l == app {
@@ -38,22 +46,30 @@ func (c *AppCollection) Remove(app AppInterface) error {
 
 // Count returns length of collection
 func (c *AppCollection) Count() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return len(c.collection)
 }
 
 // GetByIndex returns index's element
 func (c *AppCollection) GetByIndex(index int) AppInterface {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	link := c.collection[index]
 	return link
 }
 
 // Where returns a first Link which returns true for func
 func (c *AppCollection) Where(fn func(AppInterface) bool) AppSlice {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return c.collection.Where(fn)
 }
 
 // GetAll returns all apps
 func (c *AppCollection) GetAll() []AppInterface {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	apps := []AppInterface{}
 	for idx := range c.collection {
 		apps = append(apps, c.collection[idx])
@@ -64,6 +80,8 @@ func (c *AppCollection) GetAll() []AppInterface {
 
 // GetAllAppInfos returns all apps info
 func (c *AppCollection) GetAllAppInfos() []*AppInfo {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	apps := []*AppInfo{}
 	for idx := range c.collection {
 		apps = append(apps, c.collection[idx].GetAppInfo())

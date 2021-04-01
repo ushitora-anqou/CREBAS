@@ -107,7 +107,10 @@ func updateItem(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// 先頭を「大文字」にすると外部ファイルから読み込めるようになります。（export）
+func getAllStoreApps(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func StartWebServer() error {
 	fmt.Println("Rest API with Mux Routers")
 	router := mux.NewRouter().StrictSlash(true)

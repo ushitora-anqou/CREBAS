@@ -15,11 +15,12 @@ import (
 
 // LinuxProcess is a application running on linux process
 type LinuxProcess struct {
-	id        uuid.UUID
-	pid       int
-	links     netlinkext.LinkCollection
-	namespace string
-	cmd       []string
+	packageInfo *PackageInfo
+	id          uuid.UUID
+	pid         int
+	links       netlinkext.LinkCollection
+	namespace   string
+	cmd         []string
 }
 
 // NewLinuxProcess creates linux process application
