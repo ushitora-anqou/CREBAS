@@ -4,16 +4,19 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http/httptest"
+	"os/exec"
 	"testing"
 
 	"github.com/naoki9911/CREBAS/pkg/app"
+	"github.com/naoki9911/CREBAS/pkg/pkg"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGetAllAppInfos(t *testing.T) {
-	req := httptest.NewRequest("GET", "/all", nil)
+	apps.Add(app.NewLinuxProcess())
+	req := httptest.NewRequest("GET", "/apps", nil)
 	w := httptest.NewRecorder()
-	fetchAllItems(w, req)
+	getAllApps(w, req)
 	resp := w.Result()
 	resbody, _ := ioutil.ReadAll(resp.Body)
 	var appInfos []app.AppInfo
@@ -23,4 +26,31 @@ func TestGetAllAppInfos(t *testing.T) {
 	for id, appInfo := range appInfos {
 		assert.Equal(t, appInfo.Id, expectedAppInfos[id].Id, "unmatched ID")
 	}
+}
+
+func TestGetAllPkgs(t *testing.T) {
+	testPkgsDir := "/tmp/pep_test"
+	exec.Command("rm", "-rf", testPkgsDir).Run()
+	exec.Command("mkdir", "-p", testPkgsDir).Run()
+
+	pkgInfo := pkg.CreateSkeltonPackageInfo()
+	err := pkg.CreatePackage(pkgInfo, testPkgsDir)
+	if err != nil {
+		panic(err)
+	}
+
+	err = pkgs.LoadPkgs(testPkgsDir)
+	if err != nil {
+		t.Fatalf("Failed error:%v", err)
+	}
+
+	req := httptest.NewRequest("GET", "/all", nil)
+	w := httptest.NewRecorder()
+	getAllPkgs(w, req)
+	resp := w.Result()
+	resbody, _ := ioutil.ReadAll(resp.Body)
+	var pkgInfos []pkg.PackageInfo
+	json.Unmarshal(resbody, &pkgInfos)
+
+	assert.Equal(t, pkgInfos[0].MetaInfo.PkgID, pkgInfo.MetaInfo.PkgID, "unmatched ID")
 }

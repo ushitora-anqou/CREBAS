@@ -77,5 +77,10 @@ func TestLoadPackages(t *testing.T) {
 		t.Fatalf("Unequal pkg name expected:%v actual:%v", pkgInfo.MetaInfo.Name, pkgInfoTest.MetaInfo.Name)
 	}
 
+	pkgInfoTest2 := pkgCollection.GetAll()[0]
+	if pkgInfoTest2.MetaInfo.PkgID != pkgInfo.MetaInfo.PkgID {
+		t.Fatalf("Unexpected elements at GetAll()")
+	}
+
 	exec.Command("rm", "-rf", testPkgsDir).Run()
 }

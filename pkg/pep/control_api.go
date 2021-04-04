@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/naoki9911/CREBAS/pkg/app"
 )
 
 // json: ~ をパラメータに付与すると、jsonエンコード時にパラメータ名を指定することができます。
@@ -38,7 +37,7 @@ func rootPage(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Root endpoint is hooked!")
 }
 
-func fetchAllItems(w http.ResponseWriter, r *http.Request) {
+func getAllApps(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(apps.GetAllAppInfos())
 }
@@ -107,17 +106,18 @@ func updateItem(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getAllStoreApps(w http.ResponseWriter, r *http.Request) {
-
+func getAllPkgs(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(pkgs.GetAll())
 }
 
 func StartWebServer() error {
 	fmt.Println("Rest API with Mux Routers")
 	router := mux.NewRouter().StrictSlash(true)
 
-	// router.HandleFunc({ エンドポイント }, { レスポンス関数 }).Methods({ リクエストメソッド（複数可能） })
+	router.HandleFunc("/pkgs", getAllPkgs).Methods("GET")
+	router.HandleFunc("/apps", getAllApps).Methods("GET")
 	router.HandleFunc("/", rootPage)
-	router.HandleFunc("/items", fetchAllItems).Methods("GET")
 	router.HandleFunc("/item/{id}", fetchSingleItem).Methods("GET")
 
 	router.HandleFunc("/item", createItem).Methods("POST")
@@ -129,35 +129,4 @@ func StartWebServer() error {
 
 // モックデータを初期値として読み込みます
 func init() {
-	items = []*ItemParams{
-		&ItemParams{
-			Id:           "1",
-			JanCode:      "327390283080",
-			ItemName:     "item_1",
-			Price:        2500,
-			CategoryId:   1,
-			SeriesId:     1,
-			Stock:        100,
-			Discontinued: false,
-			ReleaseDate:  time.Now(),
-			CreatedAt:    time.Now(),
-			UpdatedAt:    time.Now(),
-			DeletedAt:    time.Now(),
-		},
-		&ItemParams{
-			Id:           "2",
-			JanCode:      "3273902878656",
-			ItemName:     "item_2",
-			Price:        1200,
-			CategoryId:   2,
-			SeriesId:     2,
-			Stock:        200,
-			Discontinued: false,
-			ReleaseDate:  time.Now(),
-			CreatedAt:    time.Now(),
-			UpdatedAt:    time.Now(),
-			DeletedAt:    time.Now(),
-		},
-	}
-	apps.Add(app.NewLinuxProcess())
 }

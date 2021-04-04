@@ -88,3 +88,15 @@ func (c *PkgCollection) LoadPkgs(loadDirPath string) error {
 
 	return nil
 }
+
+func (c *PkgCollection) GetAll() []*PackageInfo {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	pkgs := []*PackageInfo{}
+	for idx := range c.collection {
+		pkgs = append(pkgs, c.collection[idx])
+	}
+
+	return pkgs
+}
