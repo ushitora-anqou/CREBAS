@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/naoki9911/CREBAS/pkg/pkg"
 )
 
 func TestPackAndUnpack(t *testing.T) {
@@ -20,7 +21,7 @@ func TestPackAndUnpack(t *testing.T) {
 		t.Fatalf("Failed %v", err)
 	}
 
-	createSkeltonPackage(tmpDir)
+	pkg.CreateSkeltonPackage(tmpDir)
 
 	os.Chdir("/tmp")
 	packPkg(tmpDir)

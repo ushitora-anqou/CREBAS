@@ -3,6 +3,7 @@ package pkg
 import (
 	"fmt"
 	"io/ioutil"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -73,12 +74,15 @@ func (c *PkgCollection) LoadPkgs(loadDirPath string) error {
 			if err != nil {
 				return err
 			}
-			unpackedPkgPath := UnpackPkg(pkgPathAbs)
-			pkgInfo, err := OpenPackageInfo(filepath.Join(unpackedPkgPath, "pkgInfo.json"))
+			pkgInfo, err := UnpackPkg(pkgPathAbs)
 			if err != nil {
 				return err
 			}
 			c.Add(pkgInfo)
+			err = exec.Command("rm", "-rf", pkgInfo.UnpackedPkgPath).Run()
+			if err != nil {
+				return err
+			}
 		}
 	}
 

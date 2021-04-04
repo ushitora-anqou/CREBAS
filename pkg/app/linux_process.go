@@ -9,13 +9,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 	"github.com/naoki9911/CREBAS/pkg/ofswitch"
+	"github.com/naoki9911/CREBAS/pkg/pkg"
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netns"
 )
 
 // LinuxProcess is a application running on linux process
 type LinuxProcess struct {
-	packageInfo *PackageInfo
+	packageInfo *pkg.PackageInfo
 	id          uuid.UUID
 	pid         int
 	links       netlinkext.LinkCollection

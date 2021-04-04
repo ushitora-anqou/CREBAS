@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/uuid"
-	"github.com/naoki9911/CREBAS/pkg/app"
+	"github.com/naoki9911/CREBAS/pkg/pkg"
 )
 
 func main() {
@@ -45,7 +44,7 @@ func packPkg(pkgDir string) {
 	}
 
 	pkgInfoPath := filepath.Join(pkgDirAbs, "pkgInfo.json")
-	pkgInfo, err := app.OpenPackageInfo(pkgInfoPath)
+	pkgInfo, err := pkg.OpenPackageInfo(pkgInfoPath)
 	if err != nil {
 		panic(err)
 	}
@@ -66,19 +65,15 @@ func packPkg(pkgDir string) {
 	log.Printf("info: Successfully packed Package %v", packageName)
 }
 
-func showPkgInfo(packagePath string) *app.PackageInfo {
+func showPkgInfo(packagePath string) *pkg.PackageInfo {
 	pkgPathAbs, err := filepath.Abs(packagePath)
 	if err != nil {
 		panic(err)
 	}
-	packageExt := filepath.Ext(packagePath)
-	tmpDir := ""
-	if packageExt != ".json" {
-		tmpDir = app.UnpackPkg(pkgPathAbs)
-		pkgPathAbs = filepath.Join(tmpDir, "pkgInfo.json")
+	if !strings.HasSuffix(pkgPathAbs, ".tar.gz") {
+		panic(fmt.Errorf("Unexpected file %v", pkgPathAbs))
 	}
-
-	pkgInfo, err := app.OpenPackageInfo(pkgPathAbs)
+	pkgInfo, err := pkg.UnpackPkg(pkgPathAbs)
 	if err != nil {
 		panic(err)
 	}
@@ -93,11 +88,9 @@ func showPkgInfo(packagePath string) *app.PackageInfo {
 	fmt.Printf("- VendorID: %v\n", pkgInfo.MetaInfo.VendorID)
 	fmt.Printf("- CMD:      %v\n", pkgInfo.MetaInfo.CMD)
 
-	if packageExt != ".json" && tmpDir != "" {
-		err = exec.Command("rm", "-rf", tmpDir).Run()
-		if err != nil {
-			panic(err)
-		}
+	err = exec.Command("rm", "-rf", pkgInfo.UnpackedPkgPath).Run()
+	if err != nil {
+		panic(err)
 	}
 
 	return pkgInfo
@@ -107,8 +100,8 @@ func showExample() {
 	pkgID, _ := uuid.NewRandom()
 	vendorID, _ := uuid.NewRandom()
 
-	pkgInfo := app.PackageInfo{
-		MetaInfo: app.PackageMetaInfo{
+	pkgInfo := pkg.PackageInfo{
+		MetaInfo: pkg.PackageMetaInfo{
 			Name:     "test-pkg",
 			PkgID:    pkgID,
 			VendorID: vendorID,
@@ -118,25 +111,4 @@ func showExample() {
 
 	pkgInfoJson, _ := json.Marshal(pkgInfo)
 	fmt.Println(string(pkgInfoJson))
-}
-
-func createSkeltonPackage(pkgPath string) {
-	pkgID, _ := uuid.NewRandom()
-	vendorID, _ := uuid.NewRandom()
-
-	pkgInfo := app.PackageInfo{
-		MetaInfo: app.PackageMetaInfo{
-			Name:     "test-pkg",
-			PkgID:    pkgID,
-			VendorID: vendorID,
-			CMD:      "ping 127.0.0.1",
-		},
-	}
-
-	pkgInfoJson, _ := json.Marshal(pkgInfo)
-
-	err := ioutil.WriteFile(filepath.Join(pkgPath, "pkgInfo.json"), pkgInfoJson, os.ModePerm)
-	if err != nil {
-		panic(err)
-	}
 }
