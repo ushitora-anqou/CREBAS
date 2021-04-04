@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 	"syscall"
 
 	"github.com/google/uuid"
@@ -16,18 +17,26 @@ import (
 
 // LinuxProcess is a application running on linux process
 type LinuxProcess struct {
-	packageInfo *pkg.PackageInfo
-	id          uuid.UUID
-	pid         int
-	links       netlinkext.LinkCollection
-	namespace   string
-	cmd         []string
+	pkgInfo   *pkg.PackageInfo
+	id        uuid.UUID
+	pid       int
+	links     netlinkext.LinkCollection
+	namespace string
+	cmd       []string
 }
 
 // NewLinuxProcess creates linux process application
 func NewLinuxProcess() *LinuxProcess {
 	proc := new(LinuxProcess)
 	proc.id, _ = uuid.NewRandom()
+
+	return proc
+}
+
+func NewLinuxProcessFromPkgInfo(pkgInfo *pkg.PackageInfo) *LinuxProcess {
+	proc := NewLinuxProcess()
+	proc.pkgInfo = pkgInfo
+	proc.cmd = strings.Split(pkgInfo.MetaInfo.CMD, " ")
 
 	return proc
 }

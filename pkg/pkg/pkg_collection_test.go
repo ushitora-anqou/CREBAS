@@ -84,3 +84,28 @@ func TestLoadPackages(t *testing.T) {
 
 	exec.Command("rm", "-rf", testPkgsDir).Run()
 }
+
+func TestWhere(t *testing.T) {
+	pkgInfo := CreateSkeltonPackageInfo()
+	pkgInfo2 := CreateSkeltonPackageInfo()
+
+	pkgCollection := NewPkgCollection()
+	pkgCollection.Add(pkgInfo)
+	pkgCollection.Add(pkgInfo2)
+
+	if count := pkgCollection.Count(); count != 2 {
+		t.Fatalf("Failed expected:2 actual:#%v", count)
+	}
+
+	slices := pkgCollection.Where(func(a *PackageInfo) bool {
+		return a.MetaInfo.PkgID == pkgInfo.MetaInfo.PkgID
+	})
+
+	if slices[0] == pkgInfo2 {
+		t.Fatalf("Failed")
+	}
+
+	if slices[0] != pkgInfo {
+		t.Fatalf("Failed")
+	}
+}

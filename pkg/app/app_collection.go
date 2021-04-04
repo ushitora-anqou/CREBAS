@@ -89,3 +89,12 @@ func (c *AppCollection) GetAllAppInfos() []*AppInfo {
 
 	return apps
 }
+
+func (c *AppCollection) Clear() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.collection = AppSlice{}
+
+	return nil
+}

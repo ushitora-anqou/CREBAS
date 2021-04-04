@@ -62,6 +62,13 @@ func (c *PkgCollection) GetByIndex(index int) *PackageInfo {
 	return link
 }
 
+// Where returns a first Link which returns true for func
+func (c *PkgCollection) Where(fn func(*PackageInfo) bool) PkgSlice {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.collection.Where(fn)
+}
+
 func (c *PkgCollection) LoadPkgs(loadDirPath string) error {
 	files, err := ioutil.ReadDir(loadDirPath)
 	if err != nil {
@@ -99,4 +106,12 @@ func (c *PkgCollection) GetAll() []*PackageInfo {
 	}
 
 	return pkgs
+}
+
+func (c *PkgCollection) Clear() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.collection = PkgSlice{}
+	return nil
 }
