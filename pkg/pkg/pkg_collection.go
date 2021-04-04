@@ -70,7 +70,7 @@ func (c *PkgCollection) LoadPkgs(loadDirPath string) error {
 
 	for _, file := range files {
 		if strings.HasSuffix(file.Name(), "tar.gz") {
-			pkgPathAbs, err := filepath.Abs(file.Name())
+			pkgPathAbs, err := filepath.Abs(filepath.Join(loadDirPath, file.Name()))
 			if err != nil {
 				return err
 			}

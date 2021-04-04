@@ -1,13 +1,9 @@
 package pkg
 
 import (
-	"log"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
-
-	"github.com/google/uuid"
 )
 
 func TestAdd(t *testing.T) {
@@ -50,29 +46,18 @@ func TestRemove(t *testing.T) {
 }
 
 func TestLoadPackages(t *testing.T) {
-	exec.Command("rm", "-rf", "/tmp/pkg_collection_test").Run()
+	testPkgsDir := "/tmp/pkg_collection_test"
+	exec.Command("rm", "-rf", testPkgsDir).Run()
+	exec.Command("mkdir", "-p", testPkgsDir).Run()
 
-	uuid, _ := uuid.NewRandom()
-	tmpPkgDir := "/tmp/pkg_collection_test/" + uuid.String()
-	err := exec.Command("mkdir", "-p", tmpPkgDir).Run()
+	pkgInfo := CreateSkeltonPackageInfo()
+	err := CreatePackage(pkgInfo, testPkgsDir)
 	if err != nil {
-		t.Fatalf("Failed error:#%v", err)
-	}
-
-	prevDir, _ := filepath.Abs(".")
-	os.Chdir("/tmp/pkg_collection_test")
-
-	pkgInfo := CreateSkeltonPackage(tmpPkgDir)
-
-	packageName := pkgInfo.MetaInfo.Name + ".tar.gz"
-	log.Printf("info: Packing application to %v", packageName)
-	err = exec.Command("tar", "-zcvf", packageName, "-C", tmpPkgDir+"/", ".").Run()
-	if err != nil {
-		t.Fatalf("Failed error:#%v", err)
+		panic(err)
 	}
 
 	pkgCollection := NewPkgCollection()
-	err = pkgCollection.LoadPkgs("/tmp/pkg_collection_test")
+	err = pkgCollection.LoadPkgs(testPkgsDir)
 	if err != nil {
 		t.Fatalf("Failed error:#%v", err)
 	}
@@ -82,7 +67,8 @@ func TestLoadPackages(t *testing.T) {
 	}
 	pkgInfoTest := pkgCollection.GetByIndex(0)
 
-	packagePath := filepath.Join("/tmp/pkg_collection_test", packageName)
+	packageName := pkgInfo.MetaInfo.Name + ".tar.gz"
+	packagePath := filepath.Join(testPkgsDir, packageName)
 	if pkgInfoTest.PkgPath != packagePath {
 		t.Fatalf("Unequal PkgPath expected:%v actual:%v", packagePath, pkgInfoTest.PkgPath)
 	}
@@ -91,7 +77,5 @@ func TestLoadPackages(t *testing.T) {
 		t.Fatalf("Unequal pkg name expected:%v actual:%v", pkgInfo.MetaInfo.Name, pkgInfoTest.MetaInfo.Name)
 	}
 
-	os.Chdir(prevDir)
-
-	exec.Command("rm", "-rf", "/tmp/pkg_collection_test").Run()
+	exec.Command("rm", "-rf", testPkgsDir).Run()
 }

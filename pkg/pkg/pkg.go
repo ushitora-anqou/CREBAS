@@ -108,3 +108,48 @@ func CreateSkeltonPackage(pkgPath string) *PackageInfo {
 
 	return &pkgInfo
 }
+
+func CreateSkeltonPackageInfo() *PackageInfo {
+	pkgID, _ := uuid.NewRandom()
+	vendorID, _ := uuid.NewRandom()
+
+	pkgInfo := PackageInfo{
+		MetaInfo: PackageMetaInfo{
+			Name:     "test-pkg",
+			PkgID:    pkgID,
+			VendorID: vendorID,
+			CMD:      "ping 127.0.0.1",
+		},
+	}
+
+	return &pkgInfo
+}
+
+func CreatePackage(pkgInfo *PackageInfo, pkgPath string) error {
+	uuid, _ := uuid.NewRandom()
+	tmpPkgDir := filepath.Join(pkgPath, uuid.String())
+	err := exec.Command("mkdir", "-p", tmpPkgDir).Run()
+	if err != nil {
+		return err
+	}
+
+	pkgInfoJson, _ := json.Marshal(pkgInfo)
+	err = ioutil.WriteFile(filepath.Join(tmpPkgDir, "pkgInfo.json"), pkgInfoJson, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	packageName := pkgInfo.MetaInfo.Name + ".tar.gz"
+	log.Printf("info: Packing application to %v", packageName)
+	err = exec.Command("tar", "-zcvf", filepath.Join(pkgPath, packageName), "-C", tmpPkgDir, ".").Run()
+	if err != nil {
+		return err
+	}
+
+	err = exec.Command("rm", "-rf", tmpPkgDir).Run()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
