@@ -74,7 +74,7 @@ func showPkgInfo(packagePath string) *app.PackageInfo {
 	packageExt := filepath.Ext(packagePath)
 	tmpDir := ""
 	if packageExt != ".json" {
-		tmpDir = unpackPkg(pkgPathAbs)
+		tmpDir = app.UnpackPkg(pkgPathAbs)
 		pkgPathAbs = filepath.Join(tmpDir, "pkgInfo.json")
 	}
 
@@ -101,36 +101,6 @@ func showPkgInfo(packagePath string) *app.PackageInfo {
 	}
 
 	return pkgInfo
-}
-
-func unpackPkg(pkgPath string) string {
-	pkgPathAbs, err := filepath.Abs(pkgPath)
-	if err != nil {
-		panic(err)
-	}
-
-	uuidObj, err := uuid.NewRandom()
-	if err != nil {
-		panic(err)
-	}
-	uuidStr := uuidObj.String()
-	tmpDir := "/tmp/apppackager/" + uuidStr
-	log.Printf("info: Creating temporary directory %v", tmpDir)
-	err = exec.Command("mkdir", "-p", tmpDir).Run()
-	if err != nil {
-		panic(err)
-	}
-	prevDir, _ := filepath.Abs(".")
-	os.Chdir(tmpDir)
-	log.Printf("info: Unpacking %v", pkgPathAbs)
-	err = exec.Command("tar", "-xvf", pkgPathAbs).Run()
-	if err != nil {
-		panic(err)
-	}
-	log.Printf("info: Unpacked package to %v", tmpDir)
-	os.Chdir(prevDir)
-
-	return tmpDir
 }
 
 func showExample() {
