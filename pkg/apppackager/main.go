@@ -57,7 +57,7 @@ func packPkg(pkgDir string) {
 
 	packageName := pkgInfo.MetaInfo.Name + ".tar.gz"
 	log.Printf("info: Packing application to %v", packageName)
-	err = exec.Command("tar", "-zcvf", packageName, "-C", pkgDirAbs+"/", ".").Run()
+	err = exec.Command("tar", "-zcvf", packageName, "-C", pkgDirAbs, ".").Run()
 	if err != nil {
 		panic(err)
 	}
