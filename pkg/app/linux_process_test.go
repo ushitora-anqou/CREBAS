@@ -16,7 +16,7 @@ func TestStartAndStopProcess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed %#v", err)
 	}
-	p.cmd = []string{"/usr/bin/sleep", "1"}
+	p.cmd = []string{"/usr/bin/sleep", "10"}
 	err = p.Start()
 	if err != nil {
 		t.Fatalf("Failed %v", err)

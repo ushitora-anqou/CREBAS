@@ -89,7 +89,7 @@ func (p *LinuxProcess) killProc() error {
 		return nil
 	}
 
-	err := syscall.Kill(-p.pid, syscall.SIGKILL)
+	err := syscall.Kill(p.pid, syscall.SIGKILL)
 	if err != nil {
 		return err
 	}

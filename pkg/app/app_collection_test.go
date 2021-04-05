@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"testing"
 	"time"
 )
@@ -117,7 +116,6 @@ func TestClearNotRunningApp(t *testing.T) {
 	appCollection := NewAppCollection()
 	appCollection.Add(app)
 	appCollection.Add(app2)
-	fmt.Printf("app:%d app2:%d\n", app.pid, app2.pid)
 
 	if count := appCollection.Count(); count != 2 {
 		t.Fatalf("Failed expected:2 actual:#%v", count)
