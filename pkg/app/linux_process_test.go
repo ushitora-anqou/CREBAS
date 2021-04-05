@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 	"github.com/naoki9911/CREBAS/pkg/ofswitch"
@@ -30,6 +31,8 @@ func TestStartAndStopProcess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed %v", err)
 	}
+
+	time.Sleep(500 * time.Millisecond)
 
 	if p.IsRunning() {
 		t.Fatalf("pid %v exists", p.pid)
