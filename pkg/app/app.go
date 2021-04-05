@@ -11,6 +11,7 @@ type AppInterface interface {
 	Stop() error
 	ID() uuid.UUID
 	GetAppInfo() *AppInfo
+	IsRunning() bool
 }
 
 type AppInfo struct {

@@ -105,7 +105,7 @@ func showExample() {
 			Name:     "test-pkg",
 			PkgID:    pkgID,
 			VendorID: vendorID,
-			CMD:      "ping 127.0.0.1",
+			CMD:      []string{"ping", "127.0.0.1"},
 		},
 	}
 

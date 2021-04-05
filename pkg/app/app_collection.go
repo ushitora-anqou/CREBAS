@@ -98,3 +98,23 @@ func (c *AppCollection) Clear() error {
 
 	return nil
 }
+
+func (c *AppCollection) ClearNotRunningApp() error {
+	apps := c.GetAll()
+	for idx := range apps {
+		app := apps[idx]
+		if app.IsRunning() {
+			continue
+		}
+		err := app.Stop()
+		if err != nil {
+			return err
+		}
+		err = c.Remove(app)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

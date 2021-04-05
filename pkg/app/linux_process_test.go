@@ -2,9 +2,7 @@ package app
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
-	"syscall"
 	"testing"
 
 	"github.com/naoki9911/CREBAS/pkg/netlinkext"
@@ -14,8 +12,7 @@ import (
 )
 
 func TestStartAndStopProcess(t *testing.T) {
-	p := NewLinuxProcess()
-	err := p.Create()
+	p, err := NewLinuxProcess()
 	if err != nil {
 		t.Fatalf("Failed %#v", err)
 	}
@@ -25,23 +22,16 @@ func TestStartAndStopProcess(t *testing.T) {
 		t.Fatalf("Failed %v", err)
 	}
 
+	if !p.IsRunning() {
+		t.Fatalf("Failed proc %v is not running", p.pid)
+	}
+
 	err = p.Stop()
 	if err != nil {
 		t.Fatalf("Failed %v", err)
 	}
 
-	err = p.Delete()
-	if err != nil {
-		t.Fatalf("Failed %v", err)
-	}
-
-	proc, err := os.FindProcess(p.pid)
-	if err != nil {
-		t.Fatalf("Failed %v", err)
-	}
-
-	err = proc.Signal(syscall.Signal(0))
-	if err == nil {
+	if p.IsRunning() {
 		t.Fatalf("pid %v exists", p.pid)
 	}
 
@@ -77,24 +67,20 @@ func TestLinkAttach(t *testing.T) {
 		t.Fatalf("Failed %v", err)
 	}
 
-	p := NewLinuxProcess()
-	err = p.Create()
+	p, err := NewLinuxProcess()
 	if err != nil {
 		t.Fatalf("Failed %#v", err)
 	}
-	defer p.Delete()
 
 	procAddr, err := netlink.ParseAddr("192.168.100.2/24")
 	if err != nil {
 		t.Fatalf("Failed %v", err)
 	}
 
-	link, err := p.AddLink(ofs)
+	_, err = p.AddLinkWithAddr(ofs, procAddr)
 	if err != nil {
 		t.Fatalf("Failed %v", err)
 	}
-
-	link.SetAddr(procAddr)
 
 	p.cmd = []string{"/usr/bin/bash", "-c", "while true; do sleep 1; done"}
 	err = p.Start()

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"strings"
 	"syscall"
 
 	"github.com/google/uuid"
@@ -23,50 +22,32 @@ type LinuxProcess struct {
 	links     netlinkext.LinkCollection
 	namespace string
 	cmd       []string
+	exitCode  int
 }
 
 // NewLinuxProcess creates linux process application
-func NewLinuxProcess() *LinuxProcess {
+func NewLinuxProcess() (*LinuxProcess, error) {
 	proc := new(LinuxProcess)
 	proc.id, _ = uuid.NewRandom()
+	proc.pid = -1
 
-	return proc
-}
-
-func NewLinuxProcessFromPkgInfo(pkgInfo *pkg.PackageInfo) *LinuxProcess {
-	proc := NewLinuxProcess()
-	proc.pkgInfo = pkgInfo
-	proc.cmd = strings.Split(pkgInfo.MetaInfo.CMD, " ")
-
-	return proc
-}
-
-// Create creates process
-func (p *LinuxProcess) Create() error {
-	uuidStr := p.id.String()[0:8]
-
-	p.namespace = "netns-" + uuidStr
-	handle, err := netlinkext.CreateNetns(p.namespace)
+	uuidStr := proc.id.String()[0:8]
+	proc.namespace = "netns-" + uuidStr
+	handle, err := netlinkext.CreateNetns(proc.namespace)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer handle.Close()
 
-	return nil
+	return proc, nil
 }
 
-// Delete deletes process
-func (p *LinuxProcess) Delete() error {
-	links := p.links.Where(func(link *netlinkext.LinkExt) bool { return true })
-	for _, link := range links {
-		fmt.Println("HOGE")
-		err := link.Delete()
-		if err != nil {
-			return err
-		}
-	}
+func NewLinuxProcessFromPkgInfo(pkgInfo *pkg.PackageInfo) (*LinuxProcess, error) {
+	proc, err := NewLinuxProcess()
+	proc.pkgInfo = pkgInfo
+	proc.cmd = pkgInfo.MetaInfo.CMD
 
-	return netns.DeleteNamed(p.namespace)
+	return proc, err
 }
 
 // Start process
@@ -76,19 +57,56 @@ func (p *LinuxProcess) Start() error {
 
 // Stop process
 func (p *LinuxProcess) Stop() error {
+	if p.pid > 0 {
+		err := p.killProc()
+		if err != nil {
+			return err
+		}
+	}
+
+	err := p.delete()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *LinuxProcess) IsRunning() bool {
+	if p.pid <= 0 {
+		return false
+	}
 	proc, err := os.FindProcess(p.pid)
 	if err != nil {
-		return err
+		return false
 	}
-	err = syscall.Kill(-p.pid, syscall.SIGKILL)
-	if err != nil {
-		return err
-	}
-	_, err = proc.Wait()
-	if err != nil {
+	err = proc.Signal(syscall.Signal(0))
+	return err == nil
+}
+
+func (p *LinuxProcess) killProc() error {
+	if !p.IsRunning() {
 		return nil
 	}
+
+	err := syscall.Kill(-p.pid, syscall.SIGKILL)
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+// Delete deletes process
+func (p *LinuxProcess) delete() error {
+	links := p.links.Where(func(link *netlinkext.LinkExt) bool { return true })
+	for _, link := range links {
+		err := link.Delete()
+		if err != nil {
+			return err
+		}
+	}
+
+	return netns.DeleteNamed(p.namespace)
 }
 
 // ID returns app's id
@@ -145,6 +163,20 @@ func (p *LinuxProcess) AddLink(ofs *ofswitch.OFSwitch) (*netlinkext.LinkExt, err
 	return link, nil
 }
 
+func (p *LinuxProcess) AddLinkWithAddr(ofs *ofswitch.OFSwitch, addr *netlink.Addr) (*netlinkext.LinkExt, error) {
+	link, err := p.AddLink(ofs)
+	if err != nil {
+		return nil, err
+	}
+
+	err = link.SetAddr(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	return link, nil
+}
+
 func (p *LinuxProcess) execCmdWithNetns() error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
@@ -186,6 +218,18 @@ func (p *LinuxProcess) execCmdWithNetns() error {
 	if err != nil {
 		return err
 	}
+
+	go func() {
+		proc, err := os.FindProcess(p.pid)
+		if err != nil {
+			return
+		}
+		procState, err := proc.Wait()
+		if err != nil {
+			return
+		}
+		p.exitCode = procState.ExitCode()
+	}()
 
 	return nil
 }
