@@ -49,6 +49,10 @@ func TestCreate(t *testing.T) {
 	if !exist {
 		t.Fatalf("failed test ovs bridge %v does not exist", ofs.Name)
 	}
+
+	if ofs.datapathID == 0 {
+		t.Fatalf("invalid datapathID")
+	}
 }
 
 func TestCreateAndRemove(t *testing.T) {

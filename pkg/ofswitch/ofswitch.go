@@ -2,6 +2,10 @@ package ofswitch
 
 import (
 	"fmt"
+	"log"
+	"os/exec"
+	"strconv"
+	"strings"
 
 	"github.com/Kmotiko/gofc"
 	"github.com/Kmotiko/gofc/ofprotocol/ofp13"
@@ -18,6 +22,7 @@ type OFSwitch struct {
 	client        *ovs.Client
 	link          netlink.Link
 	ports         *netlinkext.LinkCollection
+	datapathID    uint64
 }
 
 // NewOFSwitch creates openflow switch
@@ -27,6 +32,7 @@ func NewOFSwitch(switchName string) *OFSwitch {
 	ofs.Name = switchName
 	ofs.client = ovs.New()
 	ofs.ports = netlinkext.NewLinkCollection()
+	ofs.datapathID = 0
 
 	return ofs
 }
@@ -45,7 +51,25 @@ func (s *OFSwitch) Create() error {
 	s.link = link
 
 	err = netlink.LinkSetUp(link)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Get DatapathID to controll the bridge with Ryu
+	out, err := exec.Command("ovs-vsctl", "get", "bridge", s.Name, "datapath-id").Output()
+	if err != nil {
+		log.Printf("error: Failed to get %v DatapthID", s.Name)
+		return err
+	}
+
+	// format '"xxxxxx(datapathID)"'
+	datapathIDStr := strings.Trim(string(out), "\n")
+	s.datapathID, err = strconv.ParseUint(datapathIDStr[1:len(datapathIDStr)-1], 16, 64)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Delete ovs
