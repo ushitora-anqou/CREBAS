@@ -1,11 +1,15 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"os/exec"
+	"time"
 
 	"github.com/naoki9911/CREBAS/pkg/app"
 	"github.com/naoki9911/CREBAS/pkg/ofswitch"
 	"github.com/naoki9911/CREBAS/pkg/pkg"
+	"github.com/naoki9911/gofc"
 	"github.com/vishvananda/netlink"
 )
 
@@ -15,10 +19,28 @@ var aclOfs = &ofswitch.OFSwitch{}
 var appAddrPool = &ofswitch.IP4AddrPool{}
 
 func main() {
-	prepareNetwork()
+	err := prepareNetwork()
+	if err != nil {
+		panic(err)
+	}
 	defer clearNetwork()
+	go startOFController()
+	for {
+		if aclOfs.IsConnectedToController() {
+			fmt.Println("Connected!")
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
 	prepareTestPkg()
 	StartAPIServer()
+}
+
+func startOFController() {
+	gofc.GetAppManager().RegistApplication(aclOfs)
+	log.Printf("Starting OpenFlow Controller...")
+	gofc.ServerLoop(gofc.DEFAULT_PORT)
+	log.Printf("Started OpenFlow Controller")
 }
 
 func prepareNetwork() error {
@@ -39,6 +61,11 @@ func prepareNetwork() error {
 	}
 	appAddrPool = ofswitch.NewIP4AddrPool(addr)
 	err = appAddrPool.LeaseWithAddr(addr)
+	if err != nil {
+		return err
+	}
+
+	err = aclOfs.SetController("tcp:127.0.0.1:6653")
 	if err != nil {
 		return err
 	}

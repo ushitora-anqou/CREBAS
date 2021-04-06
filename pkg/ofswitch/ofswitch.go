@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Kmotiko/gofc"
-	"github.com/Kmotiko/gofc/ofprotocol/ofp13"
 	"github.com/digitalocean/go-openvswitch/ovs"
 	"github.com/naoki9911/CREBAS/pkg/netlinkext"
+	"github.com/naoki9911/gofc"
+	"github.com/naoki9911/gofc/ofprotocol/ofp13"
 	"github.com/vishvananda/netlink"
 )
 
@@ -23,6 +23,7 @@ type OFSwitch struct {
 	link          netlink.Link
 	ports         *netlinkext.LinkCollection
 	datapathID    uint64
+	dp            *gofc.Datapath
 }
 
 // NewOFSwitch creates openflow switch
@@ -33,6 +34,7 @@ func NewOFSwitch(switchName string) *OFSwitch {
 	ofs.client = ovs.New()
 	ofs.ports = netlinkext.NewLinkCollection()
 	ofs.datapathID = 0
+	ofs.dp = nil
 
 	return ofs
 }
@@ -95,6 +97,11 @@ func (s *OFSwitch) SetAddr(addr *netlink.Addr) error {
 
 // HandleSwitchFeatures handle ovs features
 func (c *OFSwitch) HandleSwitchFeatures(msg *ofp13.OfpSwitchFeatures, dp *gofc.Datapath) {
+	if msg.DatapathId != c.datapathID {
+		return
+	}
+	c.dp = dp
+	fmt.Println("Handle SwitchFeatures")
 	// create match
 	ethdst, _ := ofp13.NewOxmEthDst("00:00:00:00:00:00")
 	if ethdst == nil {
@@ -164,4 +171,8 @@ func (c *OFSwitch) AttachLink(linkExt *netlinkext.LinkExt) error {
 
 	c.ports.Add(linkExt)
 	return nil
+}
+
+func (c *OFSwitch) IsConnectedToController() bool {
+	return c.dp != nil
 }
