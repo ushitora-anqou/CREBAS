@@ -19,12 +19,12 @@ func getOFPortByLinkName(name string) (uint32, error) {
 	portCol := outs[1]
 
 	if !strings.Contains(nameCol, "name") {
-		return 0, fmt.Errorf("Failed to parse name column %v", nameCol)
+		return 0, fmt.Errorf("failed to parse name column %v", nameCol)
 	}
 	nameRes := strings.Trim(strings.Trim(strings.Split(nameCol, ":")[1], " "), "\"")
 
 	if !strings.Contains(portCol, "ofport") {
-		return 0, fmt.Errorf("Failed to parse ofport column %v", portCol)
+		return 0, fmt.Errorf("failed to parse ofport column %v", portCol)
 	}
 	portStr := strings.Trim(strings.Split(portCol, ":")[1], " ")
 	port, err := strconv.ParseUint(portStr, 10, 32)
@@ -33,7 +33,7 @@ func getOFPortByLinkName(name string) (uint32, error) {
 	}
 
 	if string(nameRes) != string(name) {
-		return 0, fmt.Errorf("Failed expected:%v actual:%v", name, nameRes)
+		return 0, fmt.Errorf("failed expected:%v actual:%v", name, nameRes)
 	}
 
 	return uint32(port), nil

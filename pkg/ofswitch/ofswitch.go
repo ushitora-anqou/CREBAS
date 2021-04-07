@@ -182,7 +182,7 @@ func (c *OFSwitch) AttachLink(linkExt *netlinkext.LinkExt) error {
 		}
 		linkExt.Ofport = ofport
 	default:
-		return fmt.Errorf("Unknown link type:%T", link)
+		return fmt.Errorf("unknown link type:%T", link)
 	}
 
 	c.ports.Add(linkExt)
@@ -271,7 +271,7 @@ func (c *OFSwitch) addUnicastARPFlow(linkA *netlinkext.LinkExt, linkB *netlinkex
 	)
 
 	if !c.dp.Send(fm) {
-		return fmt.Errorf("Failed to send flow to switch(%v)", c.Name)
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
 	}
 
 	return nil
@@ -317,7 +317,7 @@ func (c *OFSwitch) addBroadcastARPFlow(linkA *netlinkext.LinkExt, linkB *netlink
 	)
 
 	if !c.dp.Send(fm) {
-		return fmt.Errorf("Failed to send flow to switch(%v)", c.Name)
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
 	}
 
 	return nil
@@ -392,7 +392,7 @@ func (c *OFSwitch) addUnicastICMPFlow(linkA *netlinkext.LinkExt, linkB *netlinke
 	)
 
 	if !c.dp.Send(fm) {
-		return fmt.Errorf("Failed to send flow to switch(%v)", c.Name)
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
 	}
 
 	return nil
