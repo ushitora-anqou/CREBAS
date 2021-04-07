@@ -24,14 +24,7 @@ func main() {
 		panic(err)
 	}
 	defer clearNetwork()
-	go startOFController()
-	for {
-		if aclOfs.IsConnectedToController() {
-			fmt.Println("Connected!")
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
+	startOFController()
 	prepareTestPkg()
 	StartAPIServer()
 }
@@ -39,8 +32,15 @@ func main() {
 func startOFController() {
 	gofc.GetAppManager().RegistApplication(aclOfs)
 	log.Printf("Starting OpenFlow Controller...")
-	gofc.ServerLoop(gofc.DEFAULT_PORT)
+	go gofc.ServerLoop(gofc.DEFAULT_PORT)
 	log.Printf("Started OpenFlow Controller")
+	for {
+		if aclOfs.IsConnectedToController() {
+			fmt.Println("Connected!")
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func prepareNetwork() error {

@@ -18,9 +18,8 @@ import (
 type OFSwitch struct {
 	Name          string
 	ControllerURL string
-	IPAddr        *netlink.Addr
 	client        *ovs.Client
-	link          netlink.Link
+	link          *netlinkext.LinkExt
 	ports         *netlinkext.LinkCollection
 	datapathID    uint64
 	dp            *gofc.Datapath
@@ -35,6 +34,9 @@ func NewOFSwitch(switchName string) *OFSwitch {
 	ofs.ports = netlinkext.NewLinkCollection()
 	ofs.datapathID = 0
 	ofs.dp = nil
+	ofs.link = &netlinkext.LinkExt{
+		Ofport: ofPortLocal,
+	}
 
 	return ofs
 }
@@ -50,7 +52,7 @@ func (s *OFSwitch) Create() error {
 	if err != nil {
 		return err
 	}
-	s.link = link
+	s.link.SetLink(link)
 
 	err = netlink.LinkSetUp(link)
 	if err != nil {
@@ -61,6 +63,12 @@ func (s *OFSwitch) Create() error {
 	out, err := exec.Command("ovs-vsctl", "get", "bridge", s.Name, "datapath-id").Output()
 	if err != nil {
 		log.Printf("error: Failed to get %v DatapthID", s.Name)
+		return err
+	}
+
+	err = exec.Command("ovs-vsctl", "set", "bridge", s.Name, "protocols=OpenFlow13").Run()
+	if err != nil {
+		log.Printf("error: Failed to set %v version OpenFlow 1.3", s.Name)
 		return err
 	}
 
@@ -87,11 +95,11 @@ func (s *OFSwitch) SetController(controllerURL string) error {
 
 // SetAddr configure ip(v4/v6) for ovs
 func (s *OFSwitch) SetAddr(addr *netlink.Addr) error {
-	err := netlink.AddrAdd(s.link, addr)
+	err := netlink.AddrAdd(s.link.GetLink(), addr)
 	if err != nil {
 		return err
 	}
-	s.IPAddr = addr
+	s.link.Addr = addr
 	return nil
 }
 
@@ -155,6 +163,14 @@ func (c *OFSwitch) HandleAggregateStatsReply(msg *ofp13.OfpMultipartReply, dp *g
 	}
 }
 
+func (c *OFSwitch) HandleErrorMsg(msg *ofp13.OfpErrorMsg, dp *gofc.Datapath) {
+	log.Printf("error: HandleErrorMsg Type:%d Code:%d", msg.Type, msg.Code)
+}
+
+func (c *OFSwitch) HandlePortStatus(msg *ofp13.OfpPortStatus, dp *gofc.Datapath) {
+	log.Printf("error: HandlePortStatus")
+}
+
 // AttackLink attaches link to ovs
 func (c *OFSwitch) AttachLink(linkExt *netlinkext.LinkExt) error {
 	switch link := linkExt.GetLink().(type) {
@@ -175,4 +191,209 @@ func (c *OFSwitch) AttachLink(linkExt *netlinkext.LinkExt) error {
 
 func (c *OFSwitch) IsConnectedToController() bool {
 	return c.dp != nil
+}
+
+func (c *OFSwitch) AddHostRestrictedFlow(link *netlinkext.LinkExt) error {
+	err := c.AddARPFlow(link, c.link)
+	if err != nil {
+		return err
+	}
+
+	err = c.AddICMPFlow(link, c.link)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) AddARPFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt) error {
+	err := c.addUnicastARPFlow(linkA, linkB)
+	if err != nil {
+		return err
+	}
+
+	err = c.addUnicastARPFlow(linkB, linkA)
+	if err != nil {
+		return err
+	}
+
+	err = c.addBroadcastARPFlow(linkA, linkB)
+	if err != nil {
+		return err
+	}
+
+	err = c.addBroadcastARPFlow(linkB, linkA)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) addUnicastARPFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(linkA.Ofport)
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(linkA.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst(linkB.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType := ofp13.NewOxmEthType(0x806)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(linkB.Ofport, OFPCML_NO_BUFFER))
+	instructions := make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm := ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		0,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("Failed to send flow to switch(%v)", c.Name)
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) addBroadcastARPFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(linkA.Ofport)
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(linkA.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst("FF:FF:FF:FF:FF:FF")
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType := ofp13.NewOxmEthType(0x806)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(linkB.Ofport, OFPCML_NO_BUFFER))
+	instructions := make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm := ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		0,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("Failed to send flow to switch(%v)", c.Name)
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) AddICMPFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt) error {
+	err := c.addUnicastICMPFlow(linkA, linkB)
+	if err != nil {
+		return err
+	}
+
+	err = c.addUnicastICMPFlow(linkB, linkA)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+const ofPortLocal = 0xfffffffe
+const OFPCML_NO_BUFFER = 0xffff
+
+func (c *OFSwitch) addUnicastICMPFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(linkA.Ofport)
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(linkA.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst(linkB.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType := ofp13.NewOxmEthType(0x800)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	ipSrc, err := ofp13.NewOxmIpv4Src(linkA.Addr.IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipSrc)
+
+	ipDst, err := ofp13.NewOxmIpv4Dst(linkB.Addr.IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipDst)
+
+	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(linkB.Ofport, OFPCML_NO_BUFFER))
+	instructions := make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm := ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		0,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("Failed to send flow to switch(%v)", c.Name)
+	}
+
+	return nil
 }

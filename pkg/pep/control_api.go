@@ -52,7 +52,20 @@ func startAppFromPkg(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	proc.AddLinkWithAddr(aclOfs, procAddr)
+	link, err := proc.AddLinkWithAddr(aclOfs, procAddr)
+	if err != nil {
+		log.Printf("error: Failed to add link %v", err)
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	err = aclOfs.AddHostRestrictedFlow(link)
+	if err != nil {
+		log.Printf("error: Failed to add flow %v", err)
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
 	proc.Start()
 	apps.Add(proc)
 

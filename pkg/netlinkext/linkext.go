@@ -11,9 +11,9 @@ import (
 // +gen * slice:"Where"
 type LinkExt struct {
 	link      netlink.Link
-	addr      *netlink.Addr
+	Addr      *netlink.Addr
 	namespace string
-	Ofport    int
+	Ofport    uint32
 }
 
 // NewLinkExtVeth creates veth LinkExt
@@ -96,7 +96,8 @@ func (l *LinkExt) SetAddr(addr *netlink.Addr) error {
 		return err
 	}
 
-	l.addr = addr
+	l.Addr = addr
+
 	return nil
 }
 
@@ -184,4 +185,8 @@ func (l *LinkExt) SetLinkPeerUp() error {
 	}
 
 	return nil
+}
+
+func (l *LinkExt) SetLink(link netlink.Link) {
+	l.link = link
 }

@@ -10,13 +10,13 @@ require (
 	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.2.0
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
-	github.com/naoki9911/gofc v0.0.0-20210406163901-7ec80b24889d
+	github.com/naoki9911/gofc v0.0.0-20210407152033-e9e186530d9c
 	github.com/stretchr/testify v1.7.0
 	github.com/ugorji/go v1.2.5 // indirect
 	github.com/vishvananda/netlink v1.1.0

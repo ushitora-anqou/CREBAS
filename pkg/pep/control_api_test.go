@@ -85,6 +85,7 @@ func TestStartAppFromPkg(t *testing.T) {
 		panic(err)
 	}
 	defer clearNetwork()
+	startOFController()
 
 	pkgInfo := pkg.CreateSkeltonPackageInfo()
 	pkgInfo.MetaInfo.CMD = []string{"/bin/bash", "-c", "sleep 3"}
@@ -133,6 +134,7 @@ func TestStartAppFromPkg(t *testing.T) {
 	assert.Equal(t, startedApp.Id, appInfos[0].Id)
 
 	// Check network
+	time.Sleep(1 * time.Second)
 	cmd := exec.Command("ping", "192.168.10.2", "-c", "1")
 	out, err := cmd.Output()
 	fmt.Println(string(out))
