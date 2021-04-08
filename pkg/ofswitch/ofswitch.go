@@ -376,6 +376,9 @@ func (c *OFSwitch) addUnicastICMPFlow(linkA *netlinkext.LinkExt, linkB *netlinke
 	}
 	match.Append(ipDst)
 
+	ipProto := ofp13.NewOxmIpProto(1)
+	match.Append(ipProto)
+
 	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
 	instruction.Append(ofp13.NewOfpActionOutput(linkB.Ofport, OFPCML_NO_BUFFER))
 	instructions := make([]ofp13.OfpInstruction, 0)

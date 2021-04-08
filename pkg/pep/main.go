@@ -17,6 +17,7 @@ var apps = app.AppCollection{}
 var pkgs = pkg.PkgCollection{}
 var aclOfs = &ofswitch.OFSwitch{}
 var appAddrPool = &ofswitch.IP4AddrPool{}
+var controller = gofc.NewOFController()
 
 func main() {
 	err := prepareNetwork()
@@ -24,18 +25,18 @@ func main() {
 		panic(err)
 	}
 	defer clearNetwork()
-	startOFController()
+	startOFController(aclOfs)
 	prepareTestPkg()
 	StartAPIServer()
 }
 
-func startOFController() {
-	gofc.GetAppManager().RegistApplication(aclOfs)
+func startOFController(c *ofswitch.OFSwitch) {
+	gofc.GetAppManager().RegistApplication(c)
 	log.Printf("Starting OpenFlow Controller...")
-	go gofc.ServerLoop(gofc.DEFAULT_PORT)
+	go controller.ServerLoop(gofc.DEFAULT_PORT)
 	log.Printf("Started OpenFlow Controller")
 	for {
-		if aclOfs.IsConnectedToController() {
+		if c.IsConnectedToController() {
 			fmt.Println("Connected!")
 			break
 		}

@@ -30,6 +30,7 @@ func NewLinuxProcess() (*LinuxProcess, error) {
 	proc := new(LinuxProcess)
 	proc.id, _ = uuid.NewRandom()
 	proc.pid = -1
+	proc.exitCode = -1
 
 	uuidStr := proc.id.String()[0:8]
 	proc.namespace = "netns-" + uuidStr
@@ -175,6 +176,10 @@ func (p *LinuxProcess) AddLinkWithAddr(ofs *ofswitch.OFSwitch, addr *netlink.Add
 	}
 
 	return link, nil
+}
+
+func (p *LinuxProcess) GetExitCode() int {
+	return p.exitCode
 }
 
 func (p *LinuxProcess) execCmdWithNetns() error {

@@ -1,3 +1,5 @@
+github.com/Kmotiko/gofc v0.0.0-20190902011257-857358e251a4 h1:d4LPqkMr/qqAUYmlEDE/jWCDVadiAfApc/MGxcRLh00=
+github.com/Kmotiko/gofc v0.0.0-20190902011257-857358e251a4/go.mod h1:esOmoRxRpMwDS7ftwyXdZAxofMr0GGIzHHuF+SLVMT0=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -91,6 +93,8 @@ github.com/naoki9911/gofc v0.0.0-20210407151403-26498d85a901 h1:LkJReH7H4/ukaooj
 github.com/naoki9911/gofc v0.0.0-20210407151403-26498d85a901/go.mod h1:YGhSoB72N3nAg8qoBrXRc1qCkKWffR8ESP9ExNZmU08=
 github.com/naoki9911/gofc v0.0.0-20210407152033-e9e186530d9c h1:9HLnD5x5P1OahI07nVgZ05omY8axbM7D5BfEXHzXQfA=
 github.com/naoki9911/gofc v0.0.0-20210407152033-e9e186530d9c/go.mod h1:YGhSoB72N3nAg8qoBrXRc1qCkKWffR8ESP9ExNZmU08=
+github.com/naoki9911/gofc v0.0.0-20210408150517-64811794fd5d h1:IXSJqUf3RG1HMhvyfzO33ePxXG8rs2XervqUlgukPA0=
+github.com/naoki9911/gofc v0.0.0-20210408150517-64811794fd5d/go.mod h1:YGhSoB72N3nAg8qoBrXRc1qCkKWffR8ESP9ExNZmU08=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

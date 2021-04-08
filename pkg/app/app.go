@@ -12,6 +12,7 @@ type AppInterface interface {
 	ID() uuid.UUID
 	GetAppInfo() *AppInfo
 	IsRunning() bool
+	GetExitCode() int
 }
 
 type AppInfo struct {

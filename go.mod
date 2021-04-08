@@ -3,6 +3,7 @@ module github.com/naoki9911/CREBAS
 go 1.13
 
 require (
+	github.com/Kmotiko/gofc v0.0.0-20190902011257-857358e251a4
 	github.com/digitalocean/go-openvswitch v0.0.0-20201214180534-ce0f183468d8
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.6.3
@@ -16,7 +17,7 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
-	github.com/naoki9911/gofc v0.0.0-20210407152033-e9e186530d9c
+	github.com/naoki9911/gofc v0.0.0-20210408150517-64811794fd5d
 	github.com/stretchr/testify v1.7.0
 	github.com/ugorji/go v1.2.5 // indirect
 	github.com/vishvananda/netlink v1.1.0
