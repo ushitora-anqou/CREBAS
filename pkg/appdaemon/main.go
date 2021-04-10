@@ -83,7 +83,7 @@ func testMode(mode string) {
 	} else if mode == "SIGTERM" {
 		pkgInfo.MetaInfo.CMD = []string{"sleep", "10"}
 	} else {
-		fmt.Println("invalid argument %v", mode)
+		fmt.Printf("invalid argument %v\n", mode)
 	}
 
 	start(pkgInfo)
