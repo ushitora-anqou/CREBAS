@@ -96,6 +96,7 @@ func TestPeerCommunication(t *testing.T) {
 }
 
 func TestPeerCommunication2(t *testing.T) {
+	pkgDir := "/tmp/pep_test"
 	ovsName := "ovs-test-set"
 	ofs := ofswitch.NewOFSwitch(ovsName)
 	err := ofs.Create()
@@ -129,6 +130,10 @@ func TestPeerCommunication2(t *testing.T) {
 
 	pkg1 := pkg.CreateSkeltonPackageInfo()
 	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "sleep 5"}
+	err = pkg.CreateUnpackedPackage(pkg1, pkgDir)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
 	proc1, err := app.NewLinuxProcessFromPkgInfo(pkg1)
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
@@ -144,6 +149,10 @@ func TestPeerCommunication2(t *testing.T) {
 
 	pkg2 := pkg.CreateSkeltonPackageInfo()
 	pkg2.MetaInfo.CMD = []string{"/bin/bash", "-c", "ping -c 1 -W 1 192.168.10.2"}
+	err = pkg.CreateUnpackedPackage(pkg2, pkgDir)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
 	proc2, err := app.NewLinuxProcessFromPkgInfo(pkg2)
 	if err != nil {
 		t.Fatalf("failed test %#v", err)

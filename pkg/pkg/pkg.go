@@ -135,6 +135,24 @@ func CreateSkeltonPackageInfo() *PackageInfo {
 	return &pkgInfo
 }
 
+func CreateUnpackedPackage(pkgInfo *PackageInfo, pkgPath string) error {
+	uuid, _ := uuid.NewRandom()
+	tmpPkgDir := filepath.Join(pkgPath, uuid.String())
+	err := exec.Command("mkdir", "-p", tmpPkgDir).Run()
+	if err != nil {
+		return err
+	}
+
+	pkgInfoJson, _ := json.Marshal(pkgInfo)
+	err = ioutil.WriteFile(filepath.Join(tmpPkgDir, "pkgInfo.json"), pkgInfoJson, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	pkgInfo.UnpackedPkgPath = tmpPkgDir
+	return nil
+}
+
 func CreatePackage(pkgInfo *PackageInfo, pkgPath string) error {
 	uuid, _ := uuid.NewRandom()
 	tmpPkgDir := filepath.Join(pkgPath, uuid.String())

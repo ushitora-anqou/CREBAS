@@ -168,7 +168,6 @@ func (c *OFSwitch) HandleErrorMsg(msg *ofp13.OfpErrorMsg, dp *gofc.Datapath) {
 }
 
 func (c *OFSwitch) HandlePortStatus(msg *ofp13.OfpPortStatus, dp *gofc.Datapath) {
-	log.Printf("error: HandlePortStatus")
 }
 
 // AttackLink attaches link to ovs
