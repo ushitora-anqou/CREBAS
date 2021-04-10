@@ -85,6 +85,7 @@ func (c *PkgCollection) LoadPkgs(loadDirPath string) error {
 			if err != nil {
 				return err
 			}
+			pkgInfo.UnpackedPkgPath = ""
 			c.Add(pkgInfo)
 			err = exec.Command("rm", "-rf", pkgInfo.UnpackedPkgPath).Run()
 			if err != nil {

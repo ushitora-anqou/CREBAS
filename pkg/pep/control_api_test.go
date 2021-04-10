@@ -89,7 +89,7 @@ func TestStartAppFromPkg(t *testing.T) {
 	defer controller.Stop()
 
 	pkgInfo := pkg.CreateSkeltonPackageInfo()
-	pkgInfo.MetaInfo.CMD = []string{"/bin/bash", "-c", "sleep 5"}
+	pkgInfo.MetaInfo.CMD = []string{"/bin/bash", "-c", "sleep 3"}
 	err = pkg.CreatePackage(pkgInfo, testPkgsDir)
 	if err != nil {
 		panic(err)

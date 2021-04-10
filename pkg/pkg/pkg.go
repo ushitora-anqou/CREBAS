@@ -109,6 +109,16 @@ func CreateSkeltonPackage(pkgPath string) *PackageInfo {
 	return &pkgInfo
 }
 
+func CreateSkeltonUnpackedPackage(pkgRootDir string) *PackageInfo {
+	pathID, _ := uuid.NewRandom()
+	pkgPath := filepath.Join(pkgRootDir, pathID.String())
+	exec.Command("mkdir", "-p", pkgPath)
+	pkgInfo := CreateSkeltonPackage(pkgPath)
+	pkgInfo.UnpackedPkgPath = pkgPath
+
+	return pkgInfo
+}
+
 func CreateSkeltonPackageInfo() *PackageInfo {
 	pkgID, _ := uuid.NewRandom()
 	vendorID, _ := uuid.NewRandom()

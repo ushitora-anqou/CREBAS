@@ -38,8 +38,15 @@ func startAppFromPkg(c *gin.Context) {
 		return
 	}
 
-	pkg := selectedPkgs[0]
-	proc, err := app.NewLinuxProcessFromPkgInfo(pkg)
+	startPkg := selectedPkgs[0]
+	startPkg, err = pkg.UnpackPkg(startPkg.PkgPath)
+	if err != nil {
+		log.Printf("error: Failed to unpack pkg %v", err)
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	proc, err := app.NewLinuxProcessFromPkgInfo(startPkg)
 	if err != nil {
 		log.Printf("error: Failed to create process %v", err)
 		c.JSON(http.StatusInternalServerError, err)

@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"runtime"
 	"syscall"
 
@@ -23,6 +25,7 @@ type LinuxProcess struct {
 	namespace string
 	cmd       []string
 	exitCode  int
+	exitChan  chan bool
 }
 
 // NewLinuxProcess creates linux process application
@@ -31,6 +34,7 @@ func NewLinuxProcess() (*LinuxProcess, error) {
 	proc.id, _ = uuid.NewRandom()
 	proc.pid = -1
 	proc.exitCode = -1
+	proc.exitChan = make(chan bool, 1)
 
 	uuidStr := proc.id.String()[0:8]
 	proc.namespace = "netns-" + uuidStr
@@ -90,10 +94,13 @@ func (p *LinuxProcess) killProc() error {
 		return nil
 	}
 
-	err := syscall.Kill(p.pid, syscall.SIGKILL)
+	err := syscall.Kill(p.pid, syscall.SIGTERM)
 	if err != nil {
 		return err
 	}
+
+	exit := <-p.exitChan
+	fmt.Printf("EXIT %v", exit)
 	return nil
 }
 
@@ -105,6 +112,10 @@ func (p *LinuxProcess) delete() error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if p.pkgInfo != nil && p.pkgInfo.UnpackedPkgPath != "" {
+		exec.Command("rm", "-rf", p.pkgInfo.UnpackedPkgPath).Run()
 	}
 
 	return netns.DeleteNamed(p.namespace)
@@ -202,9 +213,13 @@ func (p *LinuxProcess) execCmdWithNetns() error {
 	if err != nil {
 		return err
 	}
+	cmd := p.cmd
+	if p.pkgInfo != nil && p.pkgInfo.UnpackedPkgPath != "" {
+		cmd = []string{"/tmp/appdaemon", filepath.Join(p.pkgInfo.UnpackedPkgPath, "pkgInfo.json")}
+	}
 
 	//EXEC
-	childPID, err := syscall.ForkExec(p.cmd[0], p.cmd,
+	childPID, err := syscall.ForkExec(cmd[0], cmd,
 		&syscall.ProcAttr{
 			Env: os.Environ(),
 			Sys: &syscall.SysProcAttr{
@@ -234,6 +249,7 @@ func (p *LinuxProcess) execCmdWithNetns() error {
 			return
 		}
 		p.exitCode = procState.ExitCode()
+		p.exitChan <- true
 	}()
 
 	return nil
