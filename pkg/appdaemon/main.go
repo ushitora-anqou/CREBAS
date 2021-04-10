@@ -14,7 +14,6 @@ import (
 )
 
 var childCmd *exec.Cmd
-var childExitCode int
 
 func main() {
 	signalChan := make(chan os.Signal, 1)
