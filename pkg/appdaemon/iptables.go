@@ -57,7 +57,6 @@ func configureNAT(dgwLink netlink.Link, childLink netlink.Link) error {
 func addMasqueradeRule(inboundNetwork *net.IPNet, outboundDevice string) error {
 	subnetLength, _ := inboundNetwork.Mask.Size()
 	networkIP := inboundNetwork.IP.String() + "/" + strconv.Itoa(subnetLength)
-	fmt.Println(networkIP)
 	cmd := exec.Command("iptables", "-t", "nat", "-A", "POSTROUTING", "-s", networkIP, "-o", outboundDevice, "-j", "MASQUERADE")
 	return cmd.Run()
 }
@@ -69,10 +68,7 @@ func existMasqueradeRule(inboundNetwork *net.IPNet, outboundDevice string) bool 
 	cmd := exec.Command("iptables", "-t", "nat", "-C", "POSTROUTING", "-s", networkIP, "-o", outboundDevice, "-j", "MASQUERADE")
 	cmd.Run()
 
-	if cmd.ProcessState.ExitCode() != 0 {
-		return false
-	}
-	return true
+	return cmd.ProcessState.ExitCode() == 0
 }
 
 func addForwardRule(inboundDevice string, inboundNetwork *net.IPNet, outboundDevice string, state string) error {
