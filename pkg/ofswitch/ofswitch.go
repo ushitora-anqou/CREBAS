@@ -399,3 +399,107 @@ func (c *OFSwitch) addUnicastICMPFlow(linkA *netlinkext.LinkExt, linkB *netlinke
 
 	return nil
 }
+
+func (c *OFSwitch) AddTunnelFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt) error {
+	err := c.addUnicastTunnelFlow(linkA, linkB)
+	if err != nil {
+		return err
+	}
+
+	err = c.addUnicastTunnelFlow(linkB, linkA)
+	if err != nil {
+		return err
+	}
+
+	err = c.addBroadcastTunnelFlow(linkA, linkB)
+	if err != nil {
+		return err
+	}
+
+	err = c.addBroadcastTunnelFlow(linkB, linkA)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) addUnicastTunnelFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(linkA.Ofport)
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(linkA.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst(linkB.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(linkB.Ofport, OFPCML_NO_BUFFER))
+	instructions := make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm := ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		0,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) addBroadcastTunnelFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(linkA.Ofport)
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(linkA.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst("FF:FF:FF:FF:FF:FF")
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(linkB.Ofport, OFPCML_NO_BUFFER))
+	instructions := make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm := ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		0,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+
+	return nil
+}

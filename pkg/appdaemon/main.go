@@ -30,6 +30,8 @@ func main() {
 	if len(args) > 1 && args[0] == "testMode" {
 		testMode(args[1])
 	}
+
+	configureNetwork()
 	exec.Command("/usr/bin/ls", "-l", "/tmp/apppackager").Run()
 	pkgInfo, err := pkg.OpenPackageInfo(args[0])
 	if err != nil {
@@ -95,4 +97,13 @@ func testMode(mode string) {
 	file.WriteString(strconv.Itoa(exitCode) + "\n")
 	file.Close()
 	os.Exit(exitCode)
+}
+
+func configureNetwork() {
+	links, err := exec.Command("/bin/ip", "a", "s").Output()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(string(links))
 }

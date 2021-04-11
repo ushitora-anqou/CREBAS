@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/naoki9911/CREBAS/pkg/app"
 	"github.com/naoki9911/CREBAS/pkg/pkg"
+	"github.com/vishvananda/netlink"
 )
 
 func getAllApps(c *gin.Context) {
@@ -73,7 +74,19 @@ func startAppFromPkg(c *gin.Context) {
 		return
 	}
 
-	proc.Start()
+	extAddr, err := netlink.ParseAddr("192.168.20.1/24")
+	if err != nil {
+		log.Printf("error: Failed to parse %v", err)
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+	_, err = proc.AddLinkWithAddr(extOfs, extAddr)
+	if err != nil {
+		log.Printf("error: Failed to parse %v", err)
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
 	apps.Add(proc)
 
 	c.JSON(http.StatusOK, proc.GetAppInfo())

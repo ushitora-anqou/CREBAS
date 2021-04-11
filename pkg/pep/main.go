@@ -16,7 +16,9 @@ import (
 var apps = app.AppCollection{}
 var pkgs = pkg.PkgCollection{}
 var aclOfs = &ofswitch.OFSwitch{}
+var extOfs = &ofswitch.OFSwitch{}
 var appAddrPool = &ofswitch.IP4AddrPool{}
+var extAddrPool = &ofswitch.IP4AddrPool{}
 var controller = gofc.NewOFController()
 
 func main() {
@@ -35,6 +37,17 @@ func startOFController(c *ofswitch.OFSwitch) {
 	log.Printf("Starting OpenFlow Controller...")
 	go controller.ServerLoop(gofc.DEFAULT_PORT)
 	log.Printf("Started OpenFlow Controller")
+	for {
+		if c.IsConnectedToController() {
+			fmt.Println("Connected!")
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func appendOFSwitchToController(c *ofswitch.OFSwitch) {
+	gofc.GetAppManager().RegistApplication(c)
 	for {
 		if c.IsConnectedToController() {
 			fmt.Println("Connected!")
@@ -67,6 +80,27 @@ func prepareNetwork() error {
 	}
 
 	err = aclOfs.SetController("tcp:127.0.0.1:6653")
+	if err != nil {
+		return err
+	}
+
+	extOfs = ofswitch.NewOFSwitch("crebas-ext-ofs")
+	extOfs.Delete()
+	err = extOfs.Create()
+	if err != nil {
+		return err
+	}
+	addr, err = netlink.ParseAddr("192.168.20.1/24")
+	if err != nil {
+		return err
+	}
+	extAddrPool = ofswitch.NewIP4AddrPool(addr)
+	err = extAddrPool.LeaseWithAddr(addr)
+	if err != nil {
+		return err
+	}
+
+	err = extOfs.SetController("tcp:127.0.0.1:6653")
 	if err != nil {
 		return err
 	}
