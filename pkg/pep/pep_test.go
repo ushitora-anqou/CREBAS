@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -12,13 +13,17 @@ import (
 )
 
 func TestPeerCommunication(t *testing.T) {
+	startOFController()
+	defer controller.Stop()
 	ovsName := "ovs-test-set"
 	ofs := ofswitch.NewOFSwitch(ovsName)
+	ofs.Delete()
 	err := ofs.Create()
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
 	defer ofs.Delete()
+	fmt.Println(ofs.DatapathID)
 
 	addr, err := netlink.ParseAddr("192.168.10.1/24")
 	if err != nil {
@@ -28,6 +33,8 @@ func TestPeerCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
+
+	appendOFSwitchToController(ofs)
 
 	err = ofs.SetController("tcp:127.0.0.1:6653")
 	if err != nil {
@@ -40,10 +47,7 @@ func TestPeerCommunication(t *testing.T) {
 		t.Fatalf("failed test %#v", err)
 	}
 
-	startOFController()
-	appendOFSwitchToController(aclOfs)
-	waitOFSwitchConnectedToController(aclOfs)
-	defer controller.Stop()
+	waitOFSwitchConnectedToController(ofs)
 
 	pkg1 := pkg.CreateSkeltonPackageInfo()
 	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "sleep 5"}
@@ -99,9 +103,13 @@ func TestPeerCommunication(t *testing.T) {
 }
 
 func TestPeerCommunication2(t *testing.T) {
+	startOFController()
+	defer controller.Stop()
+	time.Sleep(time.Second)
 	pkgDir := "/tmp/pep_test"
 	ovsName := "ovs-test-set"
 	ofs := ofswitch.NewOFSwitch(ovsName)
+	ofs.Delete()
 	err := ofs.Create()
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
@@ -117,6 +125,8 @@ func TestPeerCommunication2(t *testing.T) {
 		t.Fatalf("failed test %#v", err)
 	}
 
+	appendOFSwitchToController(ofs)
+
 	err = ofs.SetController("tcp:127.0.0.1:6653")
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
@@ -128,10 +138,7 @@ func TestPeerCommunication2(t *testing.T) {
 		t.Fatalf("failed test %#v", err)
 	}
 
-	startOFController()
-	appendOFSwitchToController(aclOfs)
-	waitOFSwitchConnectedToController(aclOfs)
-	defer controller.Stop()
+	waitOFSwitchConnectedToController(ofs)
 
 	pkg1 := pkg.CreateSkeltonPackageInfo()
 	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "sleep 5"}
@@ -191,8 +198,10 @@ func TestExtCommunication(t *testing.T) {
 
 	startOFController()
 	defer controller.Stop()
+	time.Sleep(time.Second)
 
 	ofs := ofswitch.NewOFSwitch(ovsName)
+	ofs.Delete()
 	err := ofs.Create()
 	if err != nil {
 		t.Fatalf("failed test %#v", err)

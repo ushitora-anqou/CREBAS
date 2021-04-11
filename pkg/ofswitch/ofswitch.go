@@ -21,7 +21,7 @@ type OFSwitch struct {
 	client        *ovs.Client
 	link          *netlinkext.LinkExt
 	ports         *netlinkext.LinkCollection
-	datapathID    uint64
+	DatapathID    uint64
 	dp            *gofc.Datapath
 }
 
@@ -32,7 +32,7 @@ func NewOFSwitch(switchName string) *OFSwitch {
 	ofs.Name = switchName
 	ofs.client = ovs.New()
 	ofs.ports = netlinkext.NewLinkCollection()
-	ofs.datapathID = 0
+	ofs.DatapathID = 0
 	ofs.dp = nil
 	ofs.link = &netlinkext.LinkExt{
 		Ofport: ofPortLocal,
@@ -74,7 +74,7 @@ func (s *OFSwitch) Create() error {
 
 	// format '"xxxxxx(datapathID)"'
 	datapathIDStr := strings.Trim(string(out), "\n")
-	s.datapathID, err = strconv.ParseUint(datapathIDStr[1:len(datapathIDStr)-1], 16, 64)
+	s.DatapathID, err = strconv.ParseUint(datapathIDStr[1:len(datapathIDStr)-1], 16, 64)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,8 @@ func (s *OFSwitch) SetAddr(addr *netlink.Addr) error {
 
 // HandleSwitchFeatures handle ovs features
 func (c *OFSwitch) HandleSwitchFeatures(msg *ofp13.OfpSwitchFeatures, dp *gofc.Datapath) {
-	if msg.DatapathId != c.datapathID {
+	if msg.DatapathId != c.DatapathID {
+		fmt.Printf("%v %v\n", msg.DatapathId, c.DatapathID)
 		return
 	}
 	c.dp = dp
