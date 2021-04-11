@@ -41,7 +41,7 @@ func configureNAT(dgwLink netlink.Link, childLink netlink.Link) error {
 		}
 	}
 
-	if existForwardRule("", nil, "", "RELATED,ESTABLISHED") {
+	if !existForwardRule("", nil, "", "RELATED,ESTABLISHED") {
 		log.Printf("info: Adding Stateful FORWARD Rule")
 		err := addForwardRule("", nil, "", "RELATED,ESTABLISHED")
 		if err != nil {
