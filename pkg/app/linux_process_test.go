@@ -80,7 +80,7 @@ func TestLinkAttach(t *testing.T) {
 		t.Fatalf("Failed %v", err)
 	}
 
-	_, err = p.AddLinkWithAddr(ofs, procAddr)
+	_, err = p.AddLinkWithAddr(ofs, netlinkext.ACLOFSwitch, procAddr)
 	if err != nil {
 		t.Fatalf("Failed %v", err)
 	}

@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,14 +19,15 @@ import (
 
 // LinuxProcess is a application running on linux process
 type LinuxProcess struct {
-	pkgInfo   *pkg.PackageInfo
-	id        uuid.UUID
-	pid       int
-	links     netlinkext.LinkCollection
-	namespace string
-	cmd       []string
-	exitCode  int
-	exitChan  chan bool
+	pkgInfo      *pkg.PackageInfo
+	id           uuid.UUID
+	pid          int
+	defaultRoute net.IP
+	links        netlinkext.LinkCollection
+	namespace    string
+	cmd          []string
+	exitCode     int
+	exitChan     chan bool
 }
 
 // NewLinuxProcess creates linux process application
@@ -136,7 +138,7 @@ func (p *LinuxProcess) GetAppInfo() *AppInfo {
 }
 
 // AddLink adds link
-func (p *LinuxProcess) AddLink(ofs *ofswitch.OFSwitch) (*netlinkext.LinkExt, error) {
+func (p *LinuxProcess) AddLink(ofs *ofswitch.OFSwitch, ofType netlinkext.OFType) (*netlinkext.LinkExt, error) {
 	linkUUID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
@@ -155,7 +157,7 @@ func (p *LinuxProcess) AddLink(ofs *ofswitch.OFSwitch) (*netlinkext.LinkExt, err
 		return nil, err
 	}
 
-	err = ofs.AttachLink(link)
+	err = ofs.AttachLink(link, ofType)
 	if err != nil {
 		return nil, err
 	}
@@ -175,8 +177,8 @@ func (p *LinuxProcess) AddLink(ofs *ofswitch.OFSwitch) (*netlinkext.LinkExt, err
 	return link, nil
 }
 
-func (p *LinuxProcess) AddLinkWithAddr(ofs *ofswitch.OFSwitch, addr *netlink.Addr) (*netlinkext.LinkExt, error) {
-	link, err := p.AddLink(ofs)
+func (p *LinuxProcess) AddLinkWithAddr(ofs *ofswitch.OFSwitch, ofType netlinkext.OFType, addr *netlink.Addr) (*netlinkext.LinkExt, error) {
+	link, err := p.AddLink(ofs, ofType)
 	if err != nil {
 		return nil, err
 	}
@@ -187,6 +189,20 @@ func (p *LinuxProcess) AddLinkWithAddr(ofs *ofswitch.OFSwitch, addr *netlink.Add
 	}
 
 	return link, nil
+}
+
+func (p *LinuxProcess) SetDefaultRoute(addr net.IP) error {
+	err := exec.Command("ip", "netns", "exec", p.namespace, "ip", "route", "add", "default", "via", addr.String()).Run()
+	if err != nil {
+		return err
+	}
+
+	p.defaultRoute = addr
+	return nil
+}
+
+func (p *LinuxProcess) GetDefaultRoute() net.IP {
+	return p.defaultRoute
 }
 
 func (p *LinuxProcess) GetExitCode() int {
@@ -215,7 +231,7 @@ func (p *LinuxProcess) execCmdWithNetns() error {
 	}
 	cmd := p.cmd
 	if p.pkgInfo != nil && p.pkgInfo.UnpackedPkgPath != "" {
-		cmd = []string{"/tmp/appdaemon", filepath.Join(p.pkgInfo.UnpackedPkgPath, "pkgInfo.json")}
+		cmd = []string{"/tmp/appdaemon", filepath.Join(p.pkgInfo.UnpackedPkgPath, "pkgInfo.json"), p.id.String()}
 	}
 
 	//EXEC

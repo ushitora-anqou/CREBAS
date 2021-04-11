@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/naoki9911/CREBAS/pkg/app"
+	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 	"github.com/naoki9911/CREBAS/pkg/ofswitch"
 	"github.com/naoki9911/CREBAS/pkg/pkg"
 	"github.com/vishvananda/netlink"
@@ -52,7 +53,7 @@ func TestPeerCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
-	link1, err := proc1.AddLinkWithAddr(ofs, proc1Addr)
+	link1, err := proc1.AddLinkWithAddr(ofs, netlinkext.ACLOFSwitch, proc1Addr)
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
@@ -67,7 +68,7 @@ func TestPeerCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
-	link2, err := proc2.AddLinkWithAddr(ofs, proc2Addr)
+	link2, err := proc2.AddLinkWithAddr(ofs, netlinkext.ACLOFSwitch, proc2Addr)
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
@@ -142,7 +143,7 @@ func TestPeerCommunication2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
-	_, err = proc1.AddLinkWithAddr(ofs, proc1Addr)
+	_, err = proc1.AddLinkWithAddr(ofs, netlinkext.ACLOFSwitch, proc1Addr)
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
@@ -161,7 +162,7 @@ func TestPeerCommunication2(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
-	_, err = proc2.AddLinkWithAddr(ofs, proc2Addr)
+	_, err = proc2.AddLinkWithAddr(ofs, netlinkext.ACLOFSwitch, proc2Addr)
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
@@ -182,6 +183,7 @@ func TestPeerCommunication2(t *testing.T) {
 func TestExtCommunication(t *testing.T) {
 	pkgDir := "/tmp/pep_test"
 	ovsName := "ovs-test-set"
+	apps.Clear()
 	ofs := ofswitch.NewOFSwitch(ovsName)
 	err := ofs.Create()
 	if err != nil {
@@ -217,7 +219,7 @@ func TestExtCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
-	defer ofs.Delete()
+	defer ofs2.Delete()
 
 	extAddr, err := netlink.ParseAddr("192.168.20.1/24")
 	if err != nil {
@@ -251,15 +253,30 @@ func TestExtCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
-	_, err = proc1.AddLinkWithAddr(ofs, proc1Addr)
+	proc1Link, err := proc1.AddLinkWithAddr(ofs, netlinkext.ACLOFSwitch, proc1Addr)
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
+	}
+	err = proc1.SetDefaultRoute(addr.IP)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
 	}
 
-	proc1Link2, err := proc1.AddLinkWithAddr(ofs2, extAddr)
+	err = ofs.AddHostRestrictedFlow(proc1Link)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
+
+	err = ofs.AddHostUnicastTCPDstFlow(proc1Link, 8080)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
+
+	proc1Link2, err := proc1.AddLinkWithAddr(ofs2, netlinkext.ExternalOFSwitch, extAddr)
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
+	apps.Add(proc1)
 
 	pkg2 := pkg.CreateSkeltonPackageInfo()
 	pkg2.MetaInfo.CMD = []string{"/bin/bash", "-c", "ping -c 1 192.168.20.1"}
@@ -275,7 +292,7 @@ func TestExtCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
-	proc2Link, err := proc2.AddLinkWithAddr(ofs2, proc2Addr)
+	proc2Link, err := proc2.AddLinkWithAddr(ofs2, netlinkext.ExternalOFSwitch, proc2Addr)
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
@@ -283,7 +300,7 @@ func TestExtCommunication(t *testing.T) {
 	ofs2.AddTunnelFlow(proc1Link2, proc2Link)
 
 	proc1.Start()
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(2 * time.Second)
 	proc2.Start()
 
 	time.Sleep(5 * time.Second)
@@ -293,4 +310,8 @@ func TestExtCommunication(t *testing.T) {
 
 	proc1.Stop()
 	proc2.Stop()
+}
+
+func init() {
+	go StartAPIServer()
 }

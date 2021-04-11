@@ -10,11 +10,20 @@ import (
 // LinkExt is an extension for netlink.Link
 // +gen * slice:"Where"
 type LinkExt struct {
-	link      netlink.Link
-	Addr      *netlink.Addr
-	namespace string
-	Ofport    uint32
+	link         netlink.Link
+	Addr         *netlink.Addr
+	namespace    string
+	OfType       OFType
+	Ofport       uint32
+	DefaultRoute bool
 }
+
+type OFType int
+
+const (
+	ACLOFSwitch OFType = iota
+	ExternalOFSwitch
+)
 
 // NewLinkExtVeth creates veth LinkExt
 func NewLinkExtVeth(linkName string, peerName string) *LinkExt {
@@ -25,6 +34,7 @@ func NewLinkExtVeth(linkName string, peerName string) *LinkExt {
 	vethLink.Name = linkName
 	vethLink.PeerName = peerName
 	linkExt.link = vethLink
+	linkExt.DefaultRoute = false
 
 	return linkExt
 }

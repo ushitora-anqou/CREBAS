@@ -171,7 +171,7 @@ func TestAttachLink(t *testing.T) {
 		t.Fatalf("Failed %#v", err)
 	}
 
-	err = ofs.AttachLink(linkExt)
+	err = ofs.AttachLink(linkExt, netlinkext.ACLOFSwitch)
 	if err != nil {
 		t.Fatalf("Failed %#v", err)
 	}

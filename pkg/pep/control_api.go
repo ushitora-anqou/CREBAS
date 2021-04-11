@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/naoki9911/CREBAS/pkg/app"
+	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 	"github.com/naoki9911/CREBAS/pkg/pkg"
 	"github.com/vishvananda/netlink"
 )
@@ -60,7 +61,7 @@ func startAppFromPkg(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	link, err := proc.AddLinkWithAddr(aclOfs, procAddr)
+	link, err := proc.AddLinkWithAddr(aclOfs, netlinkext.ACLOFSwitch, procAddr)
 	if err != nil {
 		log.Printf("error: Failed to add link %v", err)
 		c.JSON(http.StatusInternalServerError, err)
@@ -80,7 +81,7 @@ func startAppFromPkg(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, err)
 		return
 	}
-	_, err = proc.AddLinkWithAddr(extOfs, extAddr)
+	_, err = proc.AddLinkWithAddr(extOfs, netlinkext.ExternalOFSwitch, extAddr)
 	if err != nil {
 		log.Printf("error: Failed to parse %v", err)
 		c.JSON(http.StatusInternalServerError, err)
@@ -129,8 +130,31 @@ func stopApp(c *gin.Context) {
 	c.JSON(http.StatusOK, app.ID())
 }
 
+func getAppInfo(c *gin.Context) {
+	id := c.Param("id")
+	appID, err := uuid.Parse(id)
+	if err != nil {
+		log.Printf("error: invalid id %v", id)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	selectedApp := apps.Where(func(a app.AppInterface) bool {
+		return a.ID() == appID
+	})
+
+	if len(selectedApp) != 1 {
+		log.Printf("error: invalid app ID %v", appID)
+		c.JSON(http.StatusNotFound, nil)
+		return
+	}
+
+	app := selectedApp[0]
+	c.JSON(http.StatusOK, app.GetAppInfo())
+}
+
 func StartAPIServer() error {
-	return setupRouter().Run()
+	return setupRouter().Run("0.0.0.0:8080")
 }
 
 func setupRouter() *gin.Engine {
@@ -142,6 +166,7 @@ func setupRouter() *gin.Engine {
 	r.GET("/pkgs", getAllPkgs)
 	r.POST("/pkg/:id/start", startAppFromPkg)
 	r.GET("/apps", getAllApps)
+	r.GET("/app/:id", getAppInfo)
 	r.POST("/app/:id/stop", stopApp)
 
 	return r
