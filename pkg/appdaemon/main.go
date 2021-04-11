@@ -44,11 +44,11 @@ func main() {
 				fmt.Println(err)
 			} else {
 				fmt.Println(appInfo)
+				configureNetwork()
 			}
 		}
 	}
 
-	configureNetwork()
 	exec.Command("/usr/bin/ls", "-l", "/tmp/apppackager").Run()
 	pkgInfo, err := pkg.OpenPackageInfo(args[0])
 	if err != nil {
@@ -126,13 +126,40 @@ func testMode(mode string) {
 	os.Exit(exitCode)
 }
 
-func configureNetwork() {
-	links, err := exec.Command("/bin/ip", "a", "s").Output()
+func configureNetwork() error {
+	links, err := netlink.LinkList()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	fmt.Println(string(links))
+	dgwLinkIndex, err := getDefaultRouteLinkIndex()
+	if err != nil {
+		return err
+	}
+
+	var dgwLink netlink.Link = nil
+	var childLink netlink.Link = nil
+
+	for idx := range links {
+		link := links[idx]
+		switch link.(type) {
+		case *netlink.Veth:
+			if link.Attrs().Index == dgwLinkIndex {
+				dgwLink = links[idx]
+			} else {
+				childLink = links[idx]
+			}
+		default:
+			fmt.Println("UNKNOWN")
+		}
+	}
+
+	err = configureNAT(dgwLink, childLink)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func getAppInfo(appID uuid.UUID, url string) (*app.AppInfo, error) {
@@ -174,5 +201,21 @@ func getDefaultRoute() (net.IP, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("Default route not found")
+	return nil, fmt.Errorf("default route not found")
+}
+
+func getDefaultRouteLinkIndex() (int, error) {
+	routeList, err := netlink.RouteList(nil, netlink.FAMILY_V4)
+	if err != nil {
+		return 0, err
+	}
+
+	for idx := range routeList {
+		route := routeList[idx]
+		if route.Scope == netlink.SCOPE_UNIVERSE {
+			return route.LinkIndex, nil
+		}
+	}
+
+	return 0, fmt.Errorf("default route not found")
 }
