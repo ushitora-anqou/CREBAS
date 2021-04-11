@@ -298,9 +298,9 @@ func TestExtCommunication(t *testing.T) {
 	}
 	apps.Add(proc1)
 
-	//apiUrl := "http://192.168.10.1:8080/app/" + proc1.ID().String()
+	apiUrl := "http://192.168.10.1:8080/app/" + proc1.ID().String()
 	pkg2 := pkg.CreateSkeltonPackageInfo()
-	pkg2.MetaInfo.CMD = []string{"/bin/bash", "-c", "ping -c 1 192.168.10.1"}
+	pkg2.MetaInfo.CMD = []string{"/bin/bash", "-c", "curl " + apiUrl}
 	proc2, err := app.NewLinuxProcessFromPkgInfo(pkg2)
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
@@ -321,7 +321,7 @@ func TestExtCommunication(t *testing.T) {
 	ofs2.AddTunnelFlow(proc1Link2, proc2Link)
 
 	proc1.Start()
-	time.Sleep(2 * time.Second)
+	time.Sleep(4 * time.Second)
 	proc2.Start()
 
 	time.Sleep(5 * time.Second)
