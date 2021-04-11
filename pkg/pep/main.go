@@ -27,34 +27,32 @@ func main() {
 		panic(err)
 	}
 	defer clearNetwork()
-	startOFController(aclOfs)
+	startOFController()
+	appendOFSwitchToController(aclOfs)
+	waitOFSwitchConnectedToController(aclOfs)
 	prepareTestPkg()
 	StartAPIServer()
 }
 
-func startOFController(c *ofswitch.OFSwitch) {
-	gofc.GetAppManager().RegistApplication(c)
+func startOFController() {
 	log.Printf("Starting OpenFlow Controller...")
 	go controller.ServerLoop(gofc.DEFAULT_PORT)
 	log.Printf("Started OpenFlow Controller")
-	for {
-		if c.IsConnectedToController() {
-			fmt.Println("Connected!")
-			break
-		}
-		time.Sleep(1 * time.Second)
-	}
 }
 
 func appendOFSwitchToController(c *ofswitch.OFSwitch) {
 	gofc.GetAppManager().RegistApplication(c)
+}
+
+func waitOFSwitchConnectedToController(c *ofswitch.OFSwitch) {
 	for {
 		if c.IsConnectedToController() {
-			fmt.Println("Connected!")
+			fmt.Println(c.Name + " is Connected!")
 			break
 		}
 		time.Sleep(1 * time.Second)
 	}
+
 }
 
 func prepareNetwork() error {

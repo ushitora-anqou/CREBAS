@@ -40,7 +40,9 @@ func TestPeerCommunication(t *testing.T) {
 		t.Fatalf("failed test %#v", err)
 	}
 
-	startOFController(ofs)
+	startOFController()
+	appendOFSwitchToController(aclOfs)
+	waitOFSwitchConnectedToController(aclOfs)
 	defer controller.Stop()
 
 	pkg1 := pkg.CreateSkeltonPackageInfo()
@@ -126,7 +128,9 @@ func TestPeerCommunication2(t *testing.T) {
 		t.Fatalf("failed test %#v", err)
 	}
 
-	startOFController(ofs)
+	startOFController()
+	appendOFSwitchToController(aclOfs)
+	waitOFSwitchConnectedToController(aclOfs)
 	defer controller.Stop()
 
 	pkg1 := pkg.CreateSkeltonPackageInfo()
@@ -184,12 +188,18 @@ func TestExtCommunication(t *testing.T) {
 	pkgDir := "/tmp/pep_test"
 	ovsName := "ovs-test-set"
 	apps.Clear()
+
+	startOFController()
+	defer controller.Stop()
+
 	ofs := ofswitch.NewOFSwitch(ovsName)
 	err := ofs.Create()
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
 	defer ofs.Delete()
+
+	appendOFSwitchToController(ofs)
 
 	addr, err := netlink.ParseAddr("192.168.10.1/24")
 	if err != nil {
@@ -211,8 +221,6 @@ func TestExtCommunication(t *testing.T) {
 		t.Fatalf("failed test %#v", err)
 	}
 
-	startOFController(ofs)
-
 	ovsName2 := "ovs-test-set2"
 	ofs2 := ofswitch.NewOFSwitch(ovsName2)
 	err = ofs2.Create()
@@ -220,6 +228,8 @@ func TestExtCommunication(t *testing.T) {
 		t.Fatalf("failed test %#v", err)
 	}
 	defer ofs2.Delete()
+
+	appendOFSwitchToController(ofs2)
 
 	extAddr, err := netlink.ParseAddr("192.168.20.1/24")
 	if err != nil {
@@ -237,7 +247,8 @@ func TestExtCommunication(t *testing.T) {
 		t.Fatalf("failed test %#v", err)
 	}
 
-	appendOFSwitchToController(ofs2)
+	waitOFSwitchConnectedToController(ofs)
+	waitOFSwitchConnectedToController(ofs2)
 
 	pkg1 := pkg.CreateSkeltonPackageInfo()
 	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "sleep 10"}

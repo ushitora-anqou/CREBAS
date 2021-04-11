@@ -85,7 +85,9 @@ func TestStartAppFromPkg(t *testing.T) {
 		panic(err)
 	}
 	defer clearNetwork()
-	startOFController(aclOfs)
+	startOFController()
+	appendOFSwitchToController(aclOfs)
+	waitOFSwitchConnectedToController(aclOfs)
 	defer controller.Stop()
 
 	pkgInfo := pkg.CreateSkeltonPackageInfo()
