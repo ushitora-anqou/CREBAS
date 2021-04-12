@@ -83,6 +83,14 @@ func (c *CapabilityCollection) GetAll() CapabilitySlice {
 	return caps
 }
 
+func (c *CapabilityCollection) Clear() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.collection = CapabilitySlice{}
+	return nil
+}
+
 func NewCapabilityRequestCollection() *CapabilityRequestCollection {
 	c := CapabilityRequestCollection{
 		mu:         sync.Mutex{},
@@ -149,4 +157,12 @@ func (c *CapabilityRequestCollection) GetAll() CapabilityRequestSlice {
 	}
 
 	return caps
+}
+
+func (c *CapabilityRequestCollection) Clear() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.collection = CapabilityRequestSlice{}
+	return nil
 }
