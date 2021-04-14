@@ -1,6 +1,10 @@
 package capability
 
-import "github.com/google/uuid"
+import (
+	"strings"
+
+	"github.com/google/uuid"
+)
 
 // Capability is a capability
 type Capability struct {
@@ -10,15 +14,16 @@ type Capability struct {
 	AppID                 uuid.UUID                      `json:"appID"`
 	CapabilityName        string                         `json:"capabilityName"`
 	CapabilityValue       string                         `json:"capabilityValue"`
-	CapabilityGrantPolicy CapabilityAttributeBasedPolicy `json:"capabilityGrantPolicy,omitempty"`
+	GrantCondition        string                         `json:"grantCondition,omitempty"`
+	GrantPolicy           CapabilityAttributeBasedPolicy `json:"grantPolicy,omitempty"`
 	AuthorizeCapabilityID uuid.UUID                      `json:"authorizeCapabilityID"`
 	CapabilitySignature   CapabilitySignature            `json:"capabilitySignature"`
 	GrantType             string                         `json:"grantType,omitempty"`
-	GrantCondition        string                         `json:"grantCondition,omitempty"`
 }
 
 // CapabilityAttributeBasedPolicy is a condition for Capability
 type CapabilityAttributeBasedPolicy struct {
+	Condition              string    `json:"condition"`
 	RequesterAttribute     string    `json:"requesterAttribute"`
 	RequesterDeviceID      uuid.UUID `json:"requesterDeviceID,omitempty"`
 	RequesterVendorID      uuid.UUID `json:"requesterVendorID,omitempty"`
@@ -49,6 +54,10 @@ type UserGrantPolicy struct {
 	AutoGrant      bool        `json:"autoGrant"`
 	AllowedUsersID []uuid.UUID `json:"allowedUsersID"`
 }
+
+const (
+	CAPABILITY_NAME_EXTERNAL_COMMUNICATION = "ExternalCommunication"
+)
 
 func NewCreateSkeltonCapability() *Capability {
 	cap := new(Capability)
@@ -81,4 +90,91 @@ func NewCreateSkeltonCapabilityRequest() *CapabilityRequest {
 	cap.RequestCapabilityValue = "test-cap-value"
 
 	return cap
+}
+
+func (cap *Capability) GetGrantedCap(cpID uuid.UUID, capReq *CapabilityRequest) *Capability {
+	if capReq.RequestCapabilityName == CAPABILITY_NAME_EXTERNAL_COMMUNICATION {
+		return cap.getExternalCommunicationGrantedCap(cpID, capReq)
+	}
+
+	capID, _ := uuid.NewRandom()
+	grantedCap := Capability{
+		CapabilityID:          capID,
+		AssignerID:            cpID,
+		AssigneeID:            capReq.RequesterID,
+		AppID:                 cap.AppID,
+		CapabilityName:        capReq.RequestCapabilityName,
+		CapabilityValue:       capReq.RequestCapabilityValue,
+		AuthorizeCapabilityID: cap.CapabilityID,
+		CapabilitySignature: CapabilitySignature{
+			SignerID:  cpID,
+			SigneeID:  capReq.RequesterID,
+			Signature: "",
+		},
+		GrantCondition: "none",
+	}
+
+	return &grantedCap
+
+}
+
+func (cap *Capability) getExternalCommunicationGrantedCap(cpID uuid.UUID, capReq *CapabilityRequest) *Capability {
+	domain := capReq.RequestCapabilityValue
+	allowedDomain := cap.CapabilityValue
+
+	if allowedDomain != "*" {
+		// Matching For "*.example.com" or "*example.com"
+		if strings.HasPrefix(allowedDomain, "*") {
+			var matchDomain string
+			if allowedDomain[1] == '.' {
+				matchDomain = allowedDomain[2:]
+			} else {
+				matchDomain = allowedDomain[1:]
+			}
+
+			if !strings.HasSuffix(domain, matchDomain) {
+				return nil
+			}
+		}
+	}
+
+	capID, _ := uuid.NewRandom()
+	grantedCap := Capability{
+		CapabilityID:          capID,
+		AssignerID:            cpID,
+		AssigneeID:            capReq.RequesterID,
+		AppID:                 cap.AppID,
+		CapabilityName:        capReq.RequestCapabilityName,
+		CapabilityValue:       capReq.RequestCapabilityValue,
+		AuthorizeCapabilityID: cap.CapabilityID,
+		CapabilitySignature: CapabilitySignature{
+			SignerID:  cpID,
+			SigneeID:  capReq.RequesterID,
+			Signature: "",
+		},
+		GrantCondition: "none",
+	}
+
+	return &grantedCap
+}
+
+func GetAutoGrantedCap(caps *CapabilityCollection, cpID uuid.UUID, capReq *CapabilityRequest) CapabilitySlice {
+	candidateCaps := caps.Where(func(a *Capability) bool {
+		return a.CapabilityName == capReq.RequestCapabilityName
+	})
+
+	grantedCaps := CapabilitySlice{}
+
+	for idx := range candidateCaps {
+		cap := candidateCaps[idx]
+		if cap.GrantCondition == "always" {
+			grantedCap := cap.GetGrantedCap(cpID, capReq)
+			if grantedCap == nil {
+				continue
+			}
+			grantedCaps = append(grantedCaps, grantedCap)
+		}
+	}
+
+	return grantedCaps
 }

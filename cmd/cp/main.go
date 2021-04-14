@@ -11,7 +11,7 @@ type CPConfig struct {
 	cpID uuid.UUID
 }
 
-func loadCPConfig() *CPConfig {
+func loadCPConfig() CPConfig {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		panic(err)
@@ -20,16 +20,16 @@ func loadCPConfig() *CPConfig {
 		cpID: id,
 	}
 
-	return &cpConfig
+	return cpConfig
 }
 
 var caps = capability.NewCapabilityCollection()
+var grantedCaps = capability.NewCapabilityCollection()
 var capReqs = capability.NewCapabilityRequestCollection()
+var config CPConfig = loadCPConfig()
 
 func main() {
-	cpConfig := loadCPConfig()
-
-	log.Printf("info: Starting CapabilityProvider(cpID: %v)", cpConfig.cpID)
+	log.Printf("info: Starting CapabilityProvider(cpID: %v)", config.cpID)
 
 	StartAPIServer()
 }

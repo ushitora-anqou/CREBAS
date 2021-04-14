@@ -56,10 +56,8 @@ func TestPostCapabilityReqest(t *testing.T) {
 	clearAll()
 	defer clearAll()
 
-	capReq1 := capability.NewCreateSkeltonCapabilityRequest()
-	capReq2 := capability.NewCreateSkeltonCapabilityRequest()
-	capReqsReq := []*capability.CapabilityRequest{capReq1, capReq2}
-	reqBytes, err := json.Marshal(capReqsReq)
+	capReq := capability.NewCreateSkeltonCapabilityRequest()
+	reqBytes, err := json.Marshal(capReq)
 	if err != nil {
 		t.Fatalf("Failed %v", err)
 	}
@@ -71,16 +69,60 @@ func TestPostCapabilityReqest(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusOK)
 	resp := w.Result()
 	resbody, _ := ioutil.ReadAll(resp.Body)
-	capReqsRes := []capability.CapabilityRequest{}
-	json.Unmarshal(resbody, &capReqsRes)
+	capReqRes := CapReqResponse{}
+	json.Unmarshal(resbody, &capReqRes)
 
-	assert.Equal(t, len(capReqsRes), 2)
-	assert.Equal(t, capReqsRes[0].CapabilityID, capReq1.CapabilityID)
-	assert.Equal(t, capReqsRes[1].CapabilityID, capReq2.CapabilityID)
+	assert.Equal(t, capReq.RequestID, capReqRes.Request.RequestID)
+}
 
-	assert.Equal(t, len(capReqs.GetAll()), 2)
-	capReq1Test := capReqs.GetByIndex(0)
-	capReq2Test := capReqs.GetByIndex(1)
-	assert.Equal(t, capReq1Test.CapabilityID, capReq1.CapabilityID)
-	assert.Equal(t, capReq2Test.CapabilityID, capReq2.CapabilityID)
+func TestAutoGrant(t *testing.T) {
+	clearAll()
+	defer clearAll()
+
+	cap1 := capability.NewCreateSkeltonCapability()
+	cap1.CapabilityName = capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION
+	cap1.CapabilityValue = "*.hoge.example.com"
+	cap1.GrantCondition = "always"
+
+	cap2 := capability.NewCreateSkeltonCapability()
+	cap2.CapabilityName = capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION
+	cap2.CapabilityValue = "*.example.com"
+	cap2.GrantCondition = "none"
+
+	capsReq := []*capability.Capability{cap1, cap2}
+	reqBytes, err := json.Marshal(capsReq)
+	if err != nil {
+		t.Fatalf("Failed %v", err)
+	}
+	bodyReader := strings.NewReader(string(reqBytes))
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/cap", bodyReader)
+	router.ServeHTTP(w, req)
+
+	capReq := capability.NewCreateSkeltonCapabilityRequest()
+	capReq.RequestCapabilityName = capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION
+	capReq.RequestCapabilityValue = "*.test.hoge.example.com"
+	reqBytes, err = json.Marshal(capReq)
+	if err != nil {
+		t.Fatalf("Failed %v", err)
+	}
+	bodyReader = strings.NewReader(string(reqBytes))
+	w = httptest.NewRecorder()
+	req = httptest.NewRequest("POST", "/capReq", bodyReader)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, w.Code, http.StatusOK)
+	resp := w.Result()
+	resbody, _ := ioutil.ReadAll(resp.Body)
+	capReqRes := CapReqResponse{}
+	json.Unmarshal(resbody, &capReqRes)
+
+	assert.Equal(t, capReq.RequestID, capReqRes.Request.RequestID)
+	assert.Equal(t, len(capReqRes.GrantedCapabilities), 1)
+	grantedCap := capReqRes.GrantedCapabilities[0]
+	assert.Equal(t, grantedCap.CapabilityName, capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION)
+	assert.Equal(t, grantedCap.CapabilityValue, capReq.RequestCapabilityValue)
+	assert.Equal(t, grantedCap.AuthorizeCapabilityID, cap1.CapabilityID)
+	assert.Equal(t, grantedCap.AssignerID, config.cpID)
+	assert.Equal(t, grantedCap.AssigneeID, capReq.RequesterID)
 }

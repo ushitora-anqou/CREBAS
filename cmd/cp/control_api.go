@@ -1,8 +1,6 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-contrib/cors"
@@ -37,8 +35,6 @@ func postCapability(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	reqJSON, _ := json.Marshal(req)
-	fmt.Println(string(reqJSON))
 
 	for idx := range req {
 		caps.Add(&req[idx])
@@ -47,18 +43,24 @@ func postCapability(c *gin.Context) {
 	c.JSON(http.StatusOK, req)
 }
 
+type CapReqResponse struct {
+	Request             capability.CapabilityRequest `json:"request"`
+	GrantedCapabilities capability.CapabilitySlice   `json:"grantedCapabilities"`
+}
+
 func postCapabilityRequest(c *gin.Context) {
-	var req []capability.CapabilityRequest
+	var req capability.CapabilityRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	reqJSON, _ := json.Marshal(req)
-	fmt.Println(string(reqJSON))
 
-	for idx := range req {
-		capReqs.Add(&req[idx])
+	grantedCaps := capability.GetAutoGrantedCap(caps, config.cpID, &req)
+
+	res := CapReqResponse{
+		Request:             req,
+		GrantedCapabilities: grantedCaps,
 	}
 
-	c.JSON(http.StatusOK, req)
+	c.JSON(http.StatusOK, res)
 }
