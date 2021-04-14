@@ -55,12 +55,16 @@ func postCapabilityRequest(c *gin.Context) {
 		return
 	}
 
-	grantedCaps := capability.GetAutoGrantedCap(caps, config.cpID, &req)
+	grantCaps := capability.GetAutoGrantedCap(caps, config.cpID, &req)
 
 	res := CapReqResponse{
 		Request:             req,
-		GrantedCapabilities: grantedCaps,
+		GrantedCapabilities: grantCaps,
 	}
 
 	c.JSON(http.StatusOK, res)
+
+	for idx := range grantCaps {
+		grantedCaps.Add(grantCaps[idx])
+	}
 }

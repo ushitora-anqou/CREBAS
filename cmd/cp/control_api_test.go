@@ -17,6 +17,7 @@ var router = setupRouter()
 func clearAll() {
 	caps.Clear()
 	capReqs.Clear()
+	grantedCaps.Clear()
 }
 
 func TestPostCapability(t *testing.T) {
@@ -125,4 +126,8 @@ func TestAutoGrant(t *testing.T) {
 	assert.Equal(t, grantedCap.AuthorizeCapabilityID, cap1.CapabilityID)
 	assert.Equal(t, grantedCap.AssignerID, config.cpID)
 	assert.Equal(t, grantedCap.AssigneeID, capReq.RequesterID)
+
+	assert.Equal(t, grantedCaps.Count(), 1)
+	grantedCapCP := grantedCaps.GetByIndex(0)
+	assert.Equal(t, grantedCapCP.CapabilityID, grantedCap.CapabilityID)
 }
