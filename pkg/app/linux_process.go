@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/google/uuid"
+	"github.com/naoki9911/CREBAS/pkg/capability"
 	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 	"github.com/naoki9911/CREBAS/pkg/ofswitch"
 	"github.com/naoki9911/CREBAS/pkg/pkg"
@@ -23,11 +24,13 @@ type LinuxProcess struct {
 	id           uuid.UUID
 	pid          int
 	defaultRoute net.IP
-	links        netlinkext.LinkCollection
+	links        *netlinkext.LinkCollection
 	namespace    string
 	cmd          []string
 	exitCode     int
 	exitChan     chan bool
+	device       *Device
+	capabilities *capability.CapabilityCollection
 }
 
 // NewLinuxProcess creates linux process application
@@ -37,6 +40,8 @@ func NewLinuxProcess() (*LinuxProcess, error) {
 	proc.pid = -1
 	proc.exitCode = -1
 	proc.exitChan = make(chan bool, 1)
+	proc.links = netlinkext.NewLinkCollection()
+	proc.capabilities = capability.NewCapabilityCollection()
 
 	uuidStr := proc.id.String()[0:8]
 	proc.namespace = "netns-" + uuidStr
@@ -207,6 +212,23 @@ func (p *LinuxProcess) GetDefaultRoute() net.IP {
 
 func (p *LinuxProcess) GetExitCode() int {
 	return p.exitCode
+}
+
+func (p *LinuxProcess) SetDevice(device *Device) error {
+	p.device = device
+	return nil
+}
+
+func (p *LinuxProcess) GetDevice() *Device {
+	return p.device
+}
+
+func (p *LinuxProcess) Capabilities() *capability.CapabilityCollection {
+	return p.capabilities
+}
+
+func (p *LinuxProcess) Links() *netlinkext.LinkCollection {
+	return p.links
 }
 
 func (p *LinuxProcess) execCmdWithNetns() error {

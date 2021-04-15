@@ -153,6 +153,60 @@ func getAppInfo(c *gin.Context) {
 	c.JSON(http.StatusOK, app.GetAppInfo())
 }
 
+func setDevice(c *gin.Context) {
+	id := c.Param("id")
+	appID, err := uuid.Parse(id)
+	if err != nil {
+		log.Printf("error: invalid id %v", id)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	selectedApp := apps.Where(func(a app.AppInterface) bool {
+		return a.ID() == appID
+	})
+
+	if len(selectedApp) != 1 {
+		log.Printf("error: invalid app ID %v", appID)
+		c.JSON(http.StatusNotFound, nil)
+		return
+	}
+
+	var req app.Device
+	app := selectedApp[0]
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	app.SetDevice(&req)
+	c.JSON(http.StatusOK, req)
+}
+
+func getDevice(c *gin.Context) {
+	id := c.Param("id")
+	appID, err := uuid.Parse(id)
+	if err != nil {
+		log.Printf("error: invalid id %v", id)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	selectedApp := apps.Where(func(a app.AppInterface) bool {
+		return a.ID() == appID
+	})
+
+	if len(selectedApp) != 1 {
+		log.Printf("error: invalid app ID %v", appID)
+		c.JSON(http.StatusNotFound, nil)
+		return
+	}
+
+	app := selectedApp[0]
+
+	c.JSON(http.StatusOK, app.GetDevice())
+}
+
 func StartAPIServer() error {
 	return setupRouter().Run("0.0.0.0:8080")
 }
@@ -168,6 +222,8 @@ func setupRouter() *gin.Engine {
 	r.GET("/apps", getAllApps)
 	r.GET("/app/:id", getAppInfo)
 	r.POST("/app/:id/stop", stopApp)
+	r.POST("/app/:id/device", setDevice)
+	r.GET("/app/:id/device", getDevice)
 
 	return r
 }

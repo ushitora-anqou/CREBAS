@@ -15,11 +15,13 @@ import (
 
 var apps = app.AppCollection{}
 var pkgs = pkg.PkgCollection{}
+var devices = app.DeviceCollection{}
 var aclOfs = &ofswitch.OFSwitch{}
 var extOfs = &ofswitch.OFSwitch{}
 var appAddrPool = &ofswitch.IP4AddrPool{}
 var extAddrPool = &ofswitch.IP4AddrPool{}
 var controller = gofc.NewOFController()
+var dnsServer = "8.8.8.8:53"
 
 func main() {
 	err := prepareNetwork()
@@ -31,6 +33,7 @@ func main() {
 	appendOFSwitchToController(aclOfs)
 	waitOFSwitchConnectedToController(aclOfs)
 	prepareTestPkg()
+	go startDNSServer()
 	StartAPIServer()
 }
 

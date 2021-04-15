@@ -92,6 +92,29 @@ func NewCreateSkeltonCapabilityRequest() *CapabilityRequest {
 	return cap
 }
 
+func (cap *Capability) IsDomainAllowed(domain string) bool {
+	allowedDomain := cap.CapabilityValue
+
+	if allowedDomain != "*" {
+		// Matching For "*.example.com" or "*example.com"
+		if strings.HasPrefix(allowedDomain, "*") {
+			var matchDomain string
+			if allowedDomain[1] == '.' {
+				matchDomain = allowedDomain[2:]
+			} else {
+				matchDomain = allowedDomain[1:]
+			}
+
+			if !strings.HasSuffix(domain, matchDomain) {
+				return false
+			}
+		}
+	}
+
+	return true
+
+}
+
 func (cap *Capability) GetGrantedCap(cpID uuid.UUID, capReq *CapabilityRequest) *Capability {
 	if capReq.RequestCapabilityName == CAPABILITY_NAME_EXTERNAL_COMMUNICATION {
 		return cap.getExternalCommunicationGrantedCap(cpID, capReq)
@@ -119,23 +142,8 @@ func (cap *Capability) GetGrantedCap(cpID uuid.UUID, capReq *CapabilityRequest) 
 }
 
 func (cap *Capability) getExternalCommunicationGrantedCap(cpID uuid.UUID, capReq *CapabilityRequest) *Capability {
-	domain := capReq.RequestCapabilityValue
-	allowedDomain := cap.CapabilityValue
-
-	if allowedDomain != "*" {
-		// Matching For "*.example.com" or "*example.com"
-		if strings.HasPrefix(allowedDomain, "*") {
-			var matchDomain string
-			if allowedDomain[1] == '.' {
-				matchDomain = allowedDomain[2:]
-			} else {
-				matchDomain = allowedDomain[1:]
-			}
-
-			if !strings.HasSuffix(domain, matchDomain) {
-				return nil
-			}
-		}
+	if !cap.IsDomainAllowed(capReq.RequestCapabilityValue) {
+		return nil
 	}
 
 	capID, _ := uuid.NewRandom()

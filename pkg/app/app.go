@@ -2,6 +2,8 @@ package app
 
 import (
 	"github.com/google/uuid"
+	"github.com/naoki9911/CREBAS/pkg/capability"
+	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 )
 
 // AppInterface is interface for application
@@ -13,6 +15,10 @@ type AppInterface interface {
 	GetAppInfo() *AppInfo
 	IsRunning() bool
 	GetExitCode() int
+	SetDevice(*Device) error
+	GetDevice() *Device
+	Capabilities() *capability.CapabilityCollection
+	Links() *netlinkext.LinkCollection
 }
 
 type AppInfo struct {
