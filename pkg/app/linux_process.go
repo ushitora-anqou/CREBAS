@@ -2,13 +2,13 @@ package app
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"syscall"
 
 	"github.com/google/uuid"
@@ -234,21 +234,20 @@ func (p *LinuxProcess) Links() *netlinkext.LinkCollection {
 }
 
 func (p *LinuxProcess) SetDNSServer(addr net.IP) error {
-	namespaces := strings.Split(p.namespace, "-")
-	netnsPath := "/etc/netns/" + namespaces[1]
+	netnsPath := "/etc/netns/" + p.namespace
 	cmd := exec.Command("mkdir", "-p", netnsPath)
 	if err := cmd.Run(); err != nil {
 		log.Printf("error: Failed to create directory %v", netnsPath)
 		return err
 	}
-
+	fmt.Println(netnsPath)
 	file, err := os.Create(netnsPath + "/resolv.conf")
 	if err != nil {
 		log.Printf("error: Failed to create %v", netnsPath)
 		return err
 	}
 	defer file.Close()
-	_, err = file.WriteString("nameserver " + addr.String())
+	_, err = file.WriteString("nameserver " + addr.String() + "\n")
 	if err != nil {
 		log.Printf("error: Failed to write to %v", netnsPath+"/resolv.conf")
 		return err
@@ -282,9 +281,13 @@ func (p *LinuxProcess) execCmdWithNetns() error {
 		cmd = []string{"/tmp/appdaemon", filepath.Join(p.pkgInfo.UnpackedPkgPath, "pkgInfo.json"), p.id.String()}
 	}
 
-	netnsCmd := []string{"netns", "exec"}
+	netnsCmd := []string{"netns", "exec", p.namespace}
 	netnsCmd = append(netnsCmd, cmd...)
 	cmdExec := exec.Command("ip", netnsCmd...)
+
+	stdout, _ := cmdExec.StdoutPipe()
+
+	buff := make([]byte, 1024)
 
 	err = cmdExec.Start()
 	if err != nil {
@@ -309,6 +312,18 @@ func (p *LinuxProcess) execCmdWithNetns() error {
 		}
 		p.exitCode = procState.ExitCode()
 		p.exitChan <- true
+	}()
+
+	go func() {
+		n, err := stdout.Read(buff)
+
+		for err == nil || err != io.EOF {
+			if n > 0 {
+				fmt.Print(string(buff[:n]))
+			}
+
+			n, err = stdout.Read(buff)
+		}
 	}()
 
 	return nil

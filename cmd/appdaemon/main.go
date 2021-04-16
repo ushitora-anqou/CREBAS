@@ -49,7 +49,6 @@ func main() {
 		}
 	}
 
-	exec.Command("/usr/bin/ls", "-l", "/tmp/apppackager").Run()
 	pkgInfo, err := pkg.OpenPackageInfo(args[0])
 	if err != nil {
 		panic(err)

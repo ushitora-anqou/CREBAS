@@ -379,7 +379,7 @@ func TestDNSCommunication(t *testing.T) {
 	}
 
 	pkg1 := pkg.CreateSkeltonPackageInfo()
-	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "dig @192.168.10.1 net.ist.i.kyoto-u.ac.jp"}
+	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "dig net.ist.i.kyoto-u.ac.jp"}
 	err = pkg.CreateUnpackedPackage(pkg1, pkgDir)
 	if err != nil {
 		t.Fatalf("failed test %v", err)
@@ -414,8 +414,8 @@ func TestDNSCommunication(t *testing.T) {
 	cap.CapabilityValue = "*.net.ist.i.kyoto-u.ac.jp"
 	proc1.Capabilities().Add(cap)
 
-	proc1.Start()
 	apps.Add(proc1)
+	proc1.Start()
 	time.Sleep(5 * time.Second)
 	assert.Equal(t, proc1.IsRunning(), false)
 	assert.Equal(t, proc1.GetExitCode(), 0)
