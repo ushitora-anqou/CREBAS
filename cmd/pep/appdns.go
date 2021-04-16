@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/naoki9911/CREBAS/pkg/app"
 	"github.com/naoki9911/CREBAS/pkg/capability"
 	"github.com/naoki9911/CREBAS/pkg/netlinkext"
+	"github.com/naoki9911/CREBAS/pkg/ofswitch"
 )
 
 func getQueryResultFromServer(r *dns.Msg) (*dns.Msg, error) {
@@ -55,6 +57,7 @@ func handleDnsQuery(w dns.ResponseWriter, r *dns.Msg) {
 	})
 
 	if len(selectedApps) != 1 {
+		log.Printf("info: Client %v not found", clientIP.String())
 		return
 	}
 
@@ -72,7 +75,8 @@ func handleDnsQuery(w dns.ResponseWriter, r *dns.Msg) {
 			queryToServer = append(queryToServer, question)
 			continue
 		}
-		if isDomainAllowed(caps, question.Name) {
+		domain := question.Name[:len(question.Name)-1]
+		if isDomainAllowed(caps, domain) {
 			queryToServer = append(queryToServer, question)
 		}
 	}
@@ -90,12 +94,16 @@ func handleDnsQuery(w dns.ResponseWriter, r *dns.Msg) {
 	response.SetReply(r)
 	response.Answer = RRs
 
+	for _, res := range response.Answer {
+		fmt.Println(res)
+	}
+
 	w.WriteMsg(response)
 }
 
-func startDNSServer() {
+func startDNSServer(s *ofswitch.OFSwitch) {
 
-	interfaceIP := ""
+	interfaceIP := s.Link.Addr.IP.String()
 	host := interfaceIP + ":53"
 
 	dns.HandleFunc(".", dnsHandler)

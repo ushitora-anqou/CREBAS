@@ -19,7 +19,7 @@ type OFSwitch struct {
 	Name          string
 	ControllerURL string
 	client        *ovs.Client
-	link          *netlinkext.LinkExt
+	Link          *netlinkext.LinkExt
 	ports         *netlinkext.LinkCollection
 	DatapathID    uint64
 	dp            *gofc.Datapath
@@ -34,7 +34,7 @@ func NewOFSwitch(switchName string) *OFSwitch {
 	ofs.ports = netlinkext.NewLinkCollection()
 	ofs.DatapathID = 0
 	ofs.dp = nil
-	ofs.link = &netlinkext.LinkExt{
+	ofs.Link = &netlinkext.LinkExt{
 		Ofport: ofPortLocal,
 	}
 
@@ -52,7 +52,7 @@ func (s *OFSwitch) Create() error {
 	if err != nil {
 		return err
 	}
-	s.link.SetLink(link)
+	s.Link.SetLink(link)
 
 	err = netlink.LinkSetUp(link)
 	if err != nil {
@@ -95,11 +95,11 @@ func (s *OFSwitch) SetController(controllerURL string) error {
 
 // SetAddr configure ip(v4/v6) for ovs
 func (s *OFSwitch) SetAddr(addr *netlink.Addr) error {
-	err := netlink.AddrAdd(s.link.GetLink(), addr)
+	err := netlink.AddrAdd(s.Link.GetLink(), addr)
 	if err != nil {
 		return err
 	}
-	s.link.Addr = addr
+	s.Link.Addr = addr
 	return nil
 }
 
@@ -194,12 +194,12 @@ func (c *OFSwitch) IsConnectedToController() bool {
 }
 
 func (c *OFSwitch) AddHostRestrictedFlow(link *netlinkext.LinkExt) error {
-	err := c.AddARPFlow(link, c.link)
+	err := c.AddARPFlow(link, c.Link)
 	if err != nil {
 		return err
 	}
 
-	err = c.AddICMPFlow(link, c.link)
+	err = c.AddICMPFlow(link, c.Link)
 	if err != nil {
 		return err
 	}
@@ -506,12 +506,12 @@ func (c *OFSwitch) addBroadcastTunnelFlow(linkA *netlinkext.LinkExt, linkB *netl
 }
 
 func (c *OFSwitch) AddUnicastTCPDstFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt, dstPort uint16) error {
-	err := c.addUnicastTCPDstFlow(linkA, linkB, dstPort)
+	err := c.addUnicastTransportDstFlow(linkA, linkB, 6, dstPort)
 	if err != nil {
 		return err
 	}
 
-	err = c.addUnicastTCPSrcFlow(linkB, linkA, dstPort)
+	err = c.addUnicastTransportSrcFlow(linkB, linkA, 6, dstPort)
 	if err != nil {
 		return err
 	}
@@ -520,10 +520,28 @@ func (c *OFSwitch) AddUnicastTCPDstFlow(linkA *netlinkext.LinkExt, linkB *netlin
 }
 
 func (c *OFSwitch) AddHostUnicastTCPDstFlow(linkSrc *netlinkext.LinkExt, dstPort uint16) error {
-	return c.AddUnicastTCPDstFlow(linkSrc, c.link, dstPort)
+	return c.AddUnicastTCPDstFlow(linkSrc, c.Link, dstPort)
 }
 
-func (c *OFSwitch) addUnicastTCPDstFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt, dstPort uint16) error {
+func (c *OFSwitch) AddUnicastUDPDstFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt, dstPort uint16) error {
+	err := c.addUnicastTransportDstFlow(linkA, linkB, 17, dstPort)
+	if err != nil {
+		return err
+	}
+
+	err = c.addUnicastTransportSrcFlow(linkB, linkA, 17, dstPort)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) AddHostUnicastUDPDstFlow(linkSrc *netlinkext.LinkExt, dstPort uint16) error {
+	return c.AddUnicastUDPDstFlow(linkSrc, c.Link, dstPort)
+}
+
+func (c *OFSwitch) addUnicastTransportDstFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt, protoType uint16, dstPort uint16) error {
 	match := ofp13.NewOfpMatch()
 
 	inport := ofp13.NewOxmInPort(linkA.Ofport)
@@ -559,11 +577,22 @@ func (c *OFSwitch) addUnicastTCPDstFlow(linkA *netlinkext.LinkExt, linkB *netlin
 	}
 	match.Append(ipDst)
 
-	ipProto := ofp13.NewOxmIpProto(6)
-	match.Append(ipProto)
+	if protoType == 6 {
+		ipProto := ofp13.NewOxmIpProto(6)
+		match.Append(ipProto)
 
-	tcpDst := ofp13.NewOxmTcpDst(dstPort)
-	match.Append(tcpDst)
+		tcpSrc := ofp13.NewOxmTcpDst(dstPort)
+		match.Append(tcpSrc)
+
+	} else if protoType == 17 {
+		ipProto := ofp13.NewOxmIpProto(17)
+		match.Append(ipProto)
+
+		udpSrc := ofp13.NewOxmUdpDst(dstPort)
+		match.Append(udpSrc)
+	} else {
+		return fmt.Errorf("invalid protocol type:%d", protoType)
+	}
 
 	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
 	instruction.Append(ofp13.NewOfpActionOutput(linkB.Ofport, OFPCML_NO_BUFFER))
@@ -587,7 +616,7 @@ func (c *OFSwitch) addUnicastTCPDstFlow(linkA *netlinkext.LinkExt, linkB *netlin
 	return nil
 }
 
-func (c *OFSwitch) addUnicastTCPSrcFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt, srcPort uint16) error {
+func (c *OFSwitch) addUnicastTransportSrcFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt, protoType uint16, srcPort uint16) error {
 	match := ofp13.NewOfpMatch()
 
 	inport := ofp13.NewOxmInPort(linkA.Ofport)
@@ -623,11 +652,22 @@ func (c *OFSwitch) addUnicastTCPSrcFlow(linkA *netlinkext.LinkExt, linkB *netlin
 	}
 	match.Append(ipDst)
 
-	ipProto := ofp13.NewOxmIpProto(6)
-	match.Append(ipProto)
+	if protoType == 6 {
+		ipProto := ofp13.NewOxmIpProto(6)
+		match.Append(ipProto)
 
-	tcpSrc := ofp13.NewOxmTcpSrc(srcPort)
-	match.Append(tcpSrc)
+		tcpSrc := ofp13.NewOxmTcpSrc(srcPort)
+		match.Append(tcpSrc)
+
+	} else if protoType == 17 {
+		ipProto := ofp13.NewOxmIpProto(17)
+		match.Append(ipProto)
+
+		udpSrc := ofp13.NewOxmUdpSrc(srcPort)
+		match.Append(udpSrc)
+	} else {
+		return fmt.Errorf("invalid protocol type:%d", protoType)
+	}
 
 	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
 	instruction.Append(ofp13.NewOfpActionOutput(linkB.Ofport, OFPCML_NO_BUFFER))

@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/naoki9911/CREBAS/pkg/app"
+	"github.com/naoki9911/CREBAS/pkg/capability"
 	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 	"github.com/naoki9911/CREBAS/pkg/ofswitch"
 	"github.com/naoki9911/CREBAS/pkg/pkg"
+	"github.com/stretchr/testify/assert"
 	"github.com/vishvananda/netlink"
 )
 
@@ -331,6 +333,92 @@ func TestExtCommunication(t *testing.T) {
 
 	proc1.Stop()
 	proc2.Stop()
+}
+
+func TestDNSCommunication(t *testing.T) {
+	pkgDir := "/tmp/pep_test"
+	ovsName := "ovs-test-set"
+	apps.Clear()
+
+	startOFController()
+	defer controller.Stop()
+	time.Sleep(time.Second)
+
+	aclOfs := ofswitch.NewOFSwitch(ovsName)
+	aclOfs.Delete()
+	err := aclOfs.Create()
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+	defer aclOfs.Delete()
+
+	appendOFSwitchToController(aclOfs)
+
+	addr, err := netlink.ParseAddr("192.168.10.1/24")
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+	err = aclOfs.SetAddr(addr)
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+
+	err = aclOfs.SetController("tcp:127.0.0.1:6653")
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+
+	waitOFSwitchConnectedToController(aclOfs)
+
+	go startDNSServer(aclOfs)
+
+	addrPool := ofswitch.NewIP4AddrPool(addr)
+	err = addrPool.LeaseWithAddr(addr)
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+
+	pkg1 := pkg.CreateSkeltonPackageInfo()
+	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "dig @192.168.10.1 net.ist.i.kyoto-u.ac.jp"}
+	err = pkg.CreateUnpackedPackage(pkg1, pkgDir)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
+	proc1, err := app.NewLinuxProcessFromPkgInfo(pkg1)
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+	proc1Addr, err := addrPool.Lease()
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+	proc1Link, err := proc1.AddLinkWithAddr(aclOfs, netlinkext.ACLOFSwitch, proc1Addr)
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+	err = proc1.SetDNSServer(aclOfs.Link.Addr.IP)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
+	err = aclOfs.AddHostRestrictedFlow(proc1Link)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
+	err = aclOfs.AddHostUnicastUDPDstFlow(proc1Link, 53)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
+
+	cap := capability.NewCreateSkeltonCapability()
+	cap.CapabilityName = capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION
+	cap.CapabilityValue = "*.net.ist.i.kyoto-u.ac.jp"
+	proc1.Capabilities().Add(cap)
+
+	proc1.Start()
+	apps.Add(proc1)
+	time.Sleep(5 * time.Second)
+	assert.Equal(t, proc1.IsRunning(), false)
+	assert.Equal(t, proc1.GetExitCode(), 0)
 }
 
 func init() {

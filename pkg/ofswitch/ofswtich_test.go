@@ -37,7 +37,7 @@ func TestCreate(t *testing.T) {
 		t.Fatalf("failed test %#v", err)
 	}
 
-	linkName := ofs.link.GetLink().Attrs().Name
+	linkName := ofs.Link.GetLink().Attrs().Name
 	if linkName != ofs.Name {
 		t.Fatalf("failed test expected %v actual %v", ofs.Name, linkName)
 	}

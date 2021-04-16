@@ -2,11 +2,13 @@ package app
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 
 	"github.com/google/uuid"
@@ -231,6 +233,30 @@ func (p *LinuxProcess) Links() *netlinkext.LinkCollection {
 	return p.links
 }
 
+func (p *LinuxProcess) SetDNSServer(addr net.IP) error {
+	namespaces := strings.Split(p.namespace, "-")
+	netnsPath := "/etc/netns/" + namespaces[1]
+	cmd := exec.Command("mkdir", "-p", netnsPath)
+	if err := cmd.Run(); err != nil {
+		log.Printf("error: Failed to create directory %v", netnsPath)
+		return err
+	}
+
+	file, err := os.Create(netnsPath + "/resolv.conf")
+	if err != nil {
+		log.Printf("error: Failed to create %v", netnsPath)
+		return err
+	}
+	defer file.Close()
+	_, err = file.WriteString("nameserver " + addr.String())
+	if err != nil {
+		log.Printf("error: Failed to write to %v", netnsPath+"/resolv.conf")
+		return err
+	}
+
+	return nil
+}
+
 func (p *LinuxProcess) execCmdWithNetns() error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
@@ -256,21 +282,16 @@ func (p *LinuxProcess) execCmdWithNetns() error {
 		cmd = []string{"/tmp/appdaemon", filepath.Join(p.pkgInfo.UnpackedPkgPath, "pkgInfo.json"), p.id.String()}
 	}
 
-	//EXEC
-	childPID, err := syscall.ForkExec(cmd[0], cmd,
-		&syscall.ProcAttr{
-			Env: os.Environ(),
-			Sys: &syscall.SysProcAttr{
-				Setsid: true,
-			},
-			Files: []uintptr{0, 1, 2}, // print message to the same pty
-		})
+	netnsCmd := []string{"netns", "exec"}
+	netnsCmd = append(netnsCmd, cmd...)
+	cmdExec := exec.Command("ip", netnsCmd...)
 
+	err = cmdExec.Start()
 	if err != nil {
 		fmt.Println(err.Error())
 		return err
 	}
-	p.pid = childPID
+	p.pid = cmdExec.Process.Pid
 
 	err = netns.Set(rootNetns)
 	if err != nil {

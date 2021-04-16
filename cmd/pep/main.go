@@ -33,7 +33,7 @@ func main() {
 	appendOFSwitchToController(aclOfs)
 	waitOFSwitchConnectedToController(aclOfs)
 	prepareTestPkg()
-	go startDNSServer()
+	go startDNSServer(aclOfs)
 	StartAPIServer()
 }
 
