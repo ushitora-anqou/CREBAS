@@ -174,10 +174,10 @@ func (p *LinuxProcess) AddLink(ofs *ofswitch.OFSwitch, ofType netlinkext.OFType)
 		return nil, err
 	}
 
-	err = link.SetLinkUp()
-	if err != nil {
-		return nil, err
-	}
+	//err = link.SetLinkUp()
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	p.links.Add(link)
 
@@ -194,6 +194,17 @@ func (p *LinuxProcess) AddLinkWithAddr(ofs *ofswitch.OFSwitch, ofType netlinkext
 	if err != nil {
 		return nil, err
 	}
+
+	return link, nil
+}
+
+func (p *LinuxProcess) AddLinkWithReservedAddr(ofs *ofswitch.OFSwitch, ofType netlinkext.OFType, addr *netlink.Addr) (*netlinkext.LinkExt, error) {
+	link, err := p.AddLink(ofs, ofType)
+	if err != nil {
+		return nil, err
+	}
+
+	link.Addr = addr
 
 	return link, nil
 }
@@ -231,6 +242,10 @@ func (p *LinuxProcess) Capabilities() *capability.CapabilityCollection {
 
 func (p *LinuxProcess) Links() *netlinkext.LinkCollection {
 	return p.links
+}
+
+func (p *LinuxProcess) NameSpace() string {
+	return p.namespace
 }
 
 func (p *LinuxProcess) SetDNSServer(addr net.IP) error {

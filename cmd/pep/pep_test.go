@@ -421,6 +421,90 @@ func TestDNSCommunication(t *testing.T) {
 	assert.Equal(t, proc1.GetExitCode(), 0)
 }
 
+func TestDHCPCommunication(t *testing.T) {
+	pkgDir := "/tmp/pep_test"
+	ovsName := "crebas-ext-ofs"
+	apps.Clear()
+
+	startOFController()
+	defer controller.Stop()
+	time.Sleep(time.Second)
+
+	extOfs := ofswitch.NewOFSwitch(ovsName)
+	extOfs.Delete()
+	err := extOfs.Create()
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+	defer extOfs.Delete()
+
+	appendOFSwitchToController(extOfs)
+
+	addr, err := netlink.ParseAddr("192.168.20.1/24")
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+	err = extOfs.SetAddr(addr)
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+
+	err = extOfs.SetController("tcp:127.0.0.1:6653")
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+
+	waitOFSwitchConnectedToController(extOfs)
+
+	go StartDHCPServer()
+
+	addrPool := ofswitch.NewIP4AddrPool(addr)
+	err = addrPool.LeaseWithAddr(addr)
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+
+	pkg1 := pkg.CreateSkeltonPackageInfo()
+	proc1, err := app.NewLinuxProcessFromPkgInfo(pkg1)
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+	addr, err = addrPool.Lease()
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+	proc1Link, err := proc1.AddLinkWithReservedAddr(extOfs, netlinkext.ExternalOFSwitch, addr)
+	if err != nil {
+		t.Fatalf("failed test %#v", err)
+	}
+	peerName := proc1Link.GetLink().Attrs().Name
+	err = proc1.SetDNSServer(extOfs.Link.Addr.IP)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
+	err = extOfs.AddHostRestrictedFlow(proc1Link)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
+	err = extOfs.AddHostDHCPFlow(proc1Link)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
+	fmt.Println(peerName)
+	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "dhclient -e NETNS=" + proc1.NameSpace() + " " + peerName}
+	err = pkg.CreateUnpackedPackage(pkg1, pkgDir)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
+
+	apps.Add(proc1)
+	time.Sleep(5 * time.Second)
+	proc1.Start()
+	time.Sleep(120 * time.Second)
+	assert.Equal(t, proc1.IsRunning(), false)
+	assert.Equal(t, proc1.GetExitCode(), 0)
+}
+
 func init() {
 	go StartAPIServer()
 }

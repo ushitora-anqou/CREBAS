@@ -93,8 +93,12 @@ func StartDHCPServer() {
 
 	server4Config.Addresses = []net.UDPAddr{listener}
 	server4Config.Plugins = []config.PluginConfig{
-		config.PluginConfig{
+		{
 			Name: "lease_time",
+			Args: []string{"60s"},
+		},
+		{
+			Name: "externaldhcp",
 			Args: []string{"60s"},
 		},
 	}
@@ -125,8 +129,9 @@ func handler6(req, resp dhcpv6.DHCPv6) (dhcpv6.DHCPv6, bool) {
 
 // Handler4 handles DHCPv4 packets for the fcvm plugin.
 func handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) {
+	fmt.Println("HANDLE")
 	log := logger.GetLogger("dhcpserver")
-	routerIP := "192.168.3.1/24"
+	routerIP := "192.168.20.1/24"
 	ovsIP, ovsSubnet, err := net.ParseCIDR(routerIP)
 	if err != nil {
 		log.Errorf("Failed to parse : %v", routerIP)
@@ -143,22 +148,21 @@ func handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) {
 	resp.UpdateOption(dhcpv4.OptServerIdentifier(ovsIP))
 
 	// Update DNS information
-	dnsIP := net.ParseIP("192.168.2.1")
+	dnsIP := net.ParseIP("192.168.10.1")
 	if req.IsOptionRequested(dhcpv4.OptionDomainNameServer) {
 		resp.Options.Update(dhcpv4.OptDNS([]net.IP{dnsIP}...))
 	}
 
-	clientIdentifierBytes := req.Options.Get(dhcpv4.OptionClientIdentifier)
-	if clientIdentifierBytes == nil {
-		return resp, true
-	}
-	clientIdentifier := string(clientIdentifierBytes)
-	log.Infof("ClientIdentifier :%v", clientIdentifier)
+	//clientIdentifierBytes := req.Options.Get(dhcpv4.OptionClientIdentifier)
+	//if clientIdentifierBytes == nil {
+	//	return resp, true
+	//}
+	//clientIdentifier := string(clientIdentifierBytes)
+	//log.Infof("ClientIdentifier :%v", clientIdentifier)
 
-	//clientMAC := req.ClientHWAddr.String()
-
-	//resp.YourIPAddr = net.ParseIP(selectedDevice.IPAddress)
-	//log.Printf("found IP address %s for MAC %s", selectedDevice.IPAddress, req.ClientHWAddr.String())
+	deviceIP := net.ParseIP("192.168.20.2")
+	resp.YourIPAddr = deviceIP
+	log.Printf("found IP address %s for MAC %s", resp.YourIPAddr, req.ClientHWAddr.String())
 	return resp, false
 }
 

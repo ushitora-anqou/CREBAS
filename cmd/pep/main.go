@@ -95,6 +95,10 @@ func prepareNetwork() error {
 	if err != nil {
 		return err
 	}
+	err = extOfs.SetAddr(addr)
+	if err != nil {
+		return err
+	}
 	extAddrPool = ofswitch.NewIP4AddrPool(addr)
 	err = extAddrPool.LeaseWithAddr(addr)
 	if err != nil {

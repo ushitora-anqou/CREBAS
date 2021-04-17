@@ -29,6 +29,9 @@ func main() {
 		testMode(args[1])
 	}
 
+	output, _ := exec.Command("/bin/ip", "a", "s").Output()
+	fmt.Println(string(output))
+
 	defaultRoute, err := getDefaultRoute()
 	if err != nil {
 		fmt.Println("Default route not found")
@@ -67,6 +70,10 @@ func main() {
 
 	start(pkgInfo)
 	exitCode := wait()
+
+	output, _ = exec.Command("/bin/ip", "a", "s").Output()
+	fmt.Println(string(output))
+
 	fmt.Printf("Exiting appdaemon %v\n", exitCode)
 	os.Exit(exitCode)
 }

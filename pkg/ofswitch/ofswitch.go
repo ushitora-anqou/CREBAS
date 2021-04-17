@@ -3,6 +3,7 @@ package ofswitch
 import (
 	"fmt"
 	"log"
+	"net"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -688,5 +689,268 @@ func (c *OFSwitch) addUnicastTransportSrcFlow(linkA *netlinkext.LinkExt, linkB *
 		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
 	}
 
+	return nil
+}
+
+func (c *OFSwitch) AddDHCPFlow(client *netlinkext.LinkExt, server *netlinkext.LinkExt) error {
+	err := c.addDHCPBroadcastFlow(client, server)
+	if err != nil {
+		return err
+	}
+	err = c.addDHCPUnicastFlow(client, server)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) AddHostDHCPFlow(client *netlinkext.LinkExt) error {
+	return c.AddDHCPFlow(client, c.Link)
+}
+
+func (c *OFSwitch) addDHCPBroadcastFlow(client *netlinkext.LinkExt, server *netlinkext.LinkExt) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(client.Ofport)
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(client.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst("FF:FF:FF:FF:FF:FF")
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType := ofp13.NewOxmEthType(0x800)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	ipSrc, err := ofp13.NewOxmIpv4Src(net.IPv4zero.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipSrc)
+
+	ipDst, err := ofp13.NewOxmIpv4Dst(net.IPv4bcast.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipDst)
+
+	ipProto := ofp13.NewOxmIpProto(17)
+	match.Append(ipProto)
+
+	udpSrc := ofp13.NewOxmUdpSrc(68)
+	match.Append(udpSrc)
+
+	udpDst := ofp13.NewOxmUdpDst(67)
+	match.Append(udpDst)
+
+	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(server.Ofport, OFPCML_NO_BUFFER))
+	instructions := make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm := ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		0,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+
+	match = ofp13.NewOfpMatch()
+
+	inport = ofp13.NewOxmInPort(server.Ofport)
+	match.Append(inport)
+
+	ethsrc, err = ofp13.NewOxmEthSrc(server.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err = ofp13.NewOxmEthDst("FF:FF:FF:FF:FF:FF")
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType = ofp13.NewOxmEthType(0x800)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	ipSrc, err = ofp13.NewOxmIpv4Src(server.Addr.IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipSrc)
+
+	ipDst, err = ofp13.NewOxmIpv4Dst(net.IPv4bcast.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipDst)
+
+	ipProto = ofp13.NewOxmIpProto(17)
+	match.Append(ipProto)
+
+	udpSrc = ofp13.NewOxmUdpSrc(67)
+	match.Append(udpSrc)
+
+	udpDst = ofp13.NewOxmUdpDst(68)
+	match.Append(udpDst)
+
+	instruction = ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(client.Ofport, OFPCML_NO_BUFFER))
+	instructions = make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm = ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		0,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+	return nil
+}
+
+func (c *OFSwitch) addDHCPUnicastFlow(client *netlinkext.LinkExt, server *netlinkext.LinkExt) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(client.Ofport)
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(client.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst(server.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType := ofp13.NewOxmEthType(0x800)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	ipDst, err := ofp13.NewOxmIpv4Dst(server.Addr.IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipDst)
+
+	ipProto := ofp13.NewOxmIpProto(17)
+	match.Append(ipProto)
+
+	udpSrc := ofp13.NewOxmUdpSrc(68)
+	match.Append(udpSrc)
+
+	udpDst := ofp13.NewOxmUdpDst(67)
+	match.Append(udpDst)
+
+	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(server.Ofport, OFPCML_NO_BUFFER))
+	instructions := make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm := ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		0,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+
+	match = ofp13.NewOfpMatch()
+
+	inport = ofp13.NewOxmInPort(server.Ofport)
+	match.Append(inport)
+
+	ethsrc, err = ofp13.NewOxmEthSrc(server.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err = ofp13.NewOxmEthDst(client.GetLink().Attrs().HardwareAddr.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType = ofp13.NewOxmEthType(0x800)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	ipSrc, err := ofp13.NewOxmIpv4Src(server.Addr.IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipSrc)
+
+	ipProto = ofp13.NewOxmIpProto(17)
+	match.Append(ipProto)
+
+	udpSrc = ofp13.NewOxmUdpSrc(67)
+	match.Append(udpSrc)
+
+	udpDst = ofp13.NewOxmUdpDst(68)
+	match.Append(udpDst)
+
+	instruction = ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(client.Ofport, OFPCML_NO_BUFFER))
+	instructions = make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm = ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		0,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
 	return nil
 }
