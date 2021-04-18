@@ -168,14 +168,17 @@ func prepareTestPkg() {
 }
 
 func setupWiFi() error {
-	link, err := netlink.LinkByName("wlan0")
+	link, err := netlink.LinkByName("br0")
 	if err != nil {
 		return err
 	}
 	linkExt := &netlinkext.LinkExt{}
 	linkExt.SetLink(link)
 
-	extOfs.AttachLink(linkExt, netlinkext.ExternalOFSwitch)
+	err = extOfs.AttachLink(linkExt, netlinkext.ExternalOFSwitch)
+	if err != nil {
+		return err
+	}
 	extOfs.AddHostPortPassthroughFlow(linkExt)
 	return nil
 }

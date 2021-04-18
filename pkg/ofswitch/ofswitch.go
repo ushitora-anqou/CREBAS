@@ -182,6 +182,13 @@ func (c *OFSwitch) AttachLink(linkExt *netlinkext.LinkExt, ofType netlinkext.OFT
 			return err
 		}
 		linkExt.Ofport = ofport
+	case *netlink.Bridge:
+		c.client.VSwitch.AddPort(c.Name, link.Name)
+		ofport, err := getOFPortByLinkName(link.Name)
+		if err != nil {
+			return err
+		}
+		linkExt.Ofport = ofport
 	default:
 		return fmt.Errorf("unknown link type:%T", link)
 	}
@@ -1381,6 +1388,7 @@ func (c *OFSwitch) addPortPassthroughFlow(linkA DeviceLink, linkB DeviceLink) er
 	match.Append(inport)
 
 	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(linkA.GetOfPort(), OFPCML_NO_BUFFER))
 	instruction.Append(ofp13.NewOfpActionOutput(linkB.GetOfPort(), OFPCML_NO_BUFFER))
 	instructions := make([]ofp13.OfpInstruction, 0)
 	instructions = append(instructions, instruction)
