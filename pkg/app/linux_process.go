@@ -33,6 +33,8 @@ type LinuxProcess struct {
 	exitChan     chan bool
 	device       *Device
 	capabilities *capability.CapabilityCollection
+
+	DhcpConfigPath string
 }
 
 // NewLinuxProcess creates linux process application
@@ -267,6 +269,35 @@ func (p *LinuxProcess) SetDNSServer(addr net.IP) error {
 		log.Printf("error: Failed to write to %v", netnsPath+"/resolv.conf")
 		return err
 	}
+
+	return nil
+}
+
+func (p *LinuxProcess) SetDHCPClientIdentifier(clientIdentifier string) error {
+	netnsPath := "/etc/netns/" + p.namespace
+	cmd := exec.Command("mkdir", "-p", netnsPath)
+	if err := cmd.Run(); err != nil {
+		log.Printf("error: Failed to create directory %v", netnsPath)
+		return err
+	}
+	configPath := netnsPath + "/dhclient.conf"
+	file, err := os.Create(configPath)
+	if err != nil {
+		log.Printf("error: Failed to create %v", configPath)
+		return err
+	}
+	defer file.Close()
+	p.DhcpConfigPath = configPath
+
+	file.WriteString("option rfc3442-classless-static-routes code 121 = array of unsigned integer 8;\n")
+	file.WriteString("send host-name = " + clientIdentifier + ";\n")
+	file.WriteString("request subnet-mask, broadcast-address, time-offset, routers,\n")
+	file.WriteString("domain-name, domain-name-servers, domain-search, host-name,\n")
+	file.WriteString("dhcp6.name-servers, dhcp6.domain-search, dhcp6.fqdn, dhcp6.sntp-servers,\n")
+	file.WriteString("netbios-name-servers, netbios-scope, interface-mtu,\n")
+	file.WriteString("rfc3442-classless-static-routes, ntp-servers;\n")
+	file.WriteString("send dhcp-client-identifier = 1:0:a0:24:ab:fb:9c;\n")
+	file.WriteString("timeout 300;\n")
 
 	return nil
 }

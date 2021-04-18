@@ -414,20 +414,13 @@ func TestDHCPCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
-	addr, err := extAddrPool.Lease()
-	if err != nil {
-		t.Fatalf("failed test %#v", err)
-	}
-	proc1Link, err := proc1.AddLinkWithReservedAddr(extOfs, netlinkext.ExternalOFSwitch, addr)
+
+	proc1Link, err := proc1.AddLink(extOfs, netlinkext.ExternalOFSwitch)
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
 	peerName := proc1Link.GetLink().Attrs().Name
-	err = proc1.SetDNSServer(extOfs.Link.Addr.IP)
-	if err != nil {
-		t.Fatalf("failed test %v", err)
-	}
-	err = extOfs.AddHostRestrictedFlow(proc1Link)
+	err = extOfs.AddHostARPFlow(proc1Link)
 	if err != nil {
 		t.Fatalf("failed test %v", err)
 	}
@@ -435,16 +428,38 @@ func TestDHCPCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %v", err)
 	}
-	fmt.Println(peerName)
-	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "dhclient -e NETNS=" + proc1.NameSpace() + " " + peerName}
+	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "dhclient " + peerName + "&& ping -c 1 192.168.20.1"}
 	err = pkg.CreateUnpackedPackage(pkg1, pkgDir)
 	if err != nil {
 		t.Fatalf("failed test %v", err)
 	}
 
-	apps.Add(proc1)
+	pkg2 := pkg.CreateSkeltonPackageInfo()
+	pkg2.MetaInfo.CMD = []string{"/bin/bash", "-c", "sleep 500"}
+	proc2, err := app.NewLinuxProcessFromPkgInfo(pkg2)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
+	err = pkg.CreateUnpackedPackage(pkg2, pkgDir)
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
+
+	deviceIP, err := extAddrPool.Lease()
+	if err != nil {
+		t.Fatalf("failed test %v", err)
+	}
+	device := app.Device{
+		HWAddress: proc1Link.GetLink().Attrs().HardwareAddr,
+		IPAddress: deviceIP,
+		App:       proc2,
+		OfPort:    proc1Link.Ofport,
+	}
+	fmt.Println(proc1.NameSpace())
+	devices.Add(&device)
+	//apps.Add(proc1)
 	proc1.Start()
-	time.Sleep(120 * time.Second)
+	time.Sleep(10 * time.Second)
 	assert.Equal(t, proc1.IsRunning(), false)
 	assert.Equal(t, proc1.GetExitCode(), 0)
 }

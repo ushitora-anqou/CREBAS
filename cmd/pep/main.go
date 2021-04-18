@@ -111,6 +111,15 @@ func prepareNetwork() error {
 		return err
 	}
 
+	extAppAddr, err := netlink.ParseAddr(pepConfig.extOfsAppAddr)
+	if err != nil {
+		return err
+	}
+	err = extAddrPool.LeaseWithAddr(extAppAddr)
+	if err != nil {
+		return err
+	}
+
 	err = extOfs.SetController("tcp:127.0.0.1:6653")
 	if err != nil {
 		return err

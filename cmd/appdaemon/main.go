@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net"
@@ -80,13 +81,28 @@ func main() {
 
 func start(pkgInfo *pkg.PackageInfo) error {
 
+	buff := make([]byte, 1024)
+
 	cmds := pkgInfo.MetaInfo.CMD
 	childCmd = exec.Command(cmds[0], cmds[1:]...)
+	stdout, _ := childCmd.StdoutPipe()
 
 	err := childCmd.Start()
 	if err != nil {
 		return err
 	}
+
+	go func() {
+		n, err := stdout.Read(buff)
+
+		for err == nil || err != io.EOF {
+			if n > 0 {
+				fmt.Print(string(buff[:n]))
+			}
+
+			n, err = stdout.Read(buff)
+		}
+	}()
 
 	return nil
 }

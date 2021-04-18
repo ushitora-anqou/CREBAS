@@ -208,6 +208,15 @@ func (c *OFSwitch) AddHostRestrictedFlow(link *netlinkext.LinkExt) error {
 	return nil
 }
 
+func (c *OFSwitch) AddHostARPFlow(link *netlinkext.LinkExt) error {
+	err := c.AddARPFlow(link, c.Link)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *OFSwitch) AddARPFlow(linkA *netlinkext.LinkExt, linkB *netlinkext.LinkExt) error {
 	err := c.addUnicastARPFlow(linkA, linkB)
 	if err != nil {
@@ -319,6 +328,147 @@ func (c *OFSwitch) addBroadcastARPFlow(linkA *netlinkext.LinkExt, linkB *netlink
 
 	if !c.dp.Send(fm) {
 		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) DeleteARPFlow(linkA DeviceLink, linkB DeviceLink) error {
+	err := c.deleteUnicastARPFlow(linkA, linkB)
+	if err != nil {
+		return err
+	}
+
+	err = c.deleteUnicastARPFlow(linkB, linkA)
+	if err != nil {
+		return err
+	}
+
+	err = c.deleteBroadcastARPFlow(linkA, linkB)
+	if err != nil {
+		return err
+	}
+
+	err = c.deleteBroadcastARPFlow(linkB, linkA)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) DeleteHostARPFlow(linkA DeviceLink) error {
+	err := c.deleteUnicastARPFlow(linkA, c.Link)
+	if err != nil {
+		return err
+	}
+
+	err = c.deleteUnicastARPFlow(c.Link, linkA)
+	if err != nil {
+		return err
+	}
+
+	err = c.deleteBroadcastARPFlow(linkA, c.Link)
+	if err != nil {
+		return err
+	}
+
+	err = c.deleteBroadcastARPFlow(c.Link, linkA)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) deleteUnicastARPFlow(linkA DeviceLink, linkB DeviceLink) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(linkA.GetOfPort())
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(linkA.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst(linkB.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType := ofp13.NewOxmEthType(0x806)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	fm := ofp13.NewOfpFlowModDelete(
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		match,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) deleteBroadcastARPFlow(linkA DeviceLink, linkB DeviceLink) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(linkA.GetOfPort())
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(linkA.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst("FF:FF:FF:FF:FF:FF")
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType := ofp13.NewOxmEthType(0x806)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	fm := ofp13.NewOfpFlowModDelete(
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		match,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) AddHostICMPFlow(link *netlinkext.LinkExt) error {
+	err := c.AddICMPFlow(link, c.Link)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -763,7 +913,7 @@ func (c *OFSwitch) addDHCPBroadcastFlow(client *netlinkext.LinkExt, server *netl
 		0,
 		0,
 		0,
-		0,
+		20,
 		0,
 		match,
 		instructions,
@@ -826,7 +976,7 @@ func (c *OFSwitch) addDHCPBroadcastFlow(client *netlinkext.LinkExt, server *netl
 		0,
 		0,
 		0,
-		0,
+		20,
 		0,
 		match,
 		instructions,
@@ -886,7 +1036,7 @@ func (c *OFSwitch) addDHCPUnicastFlow(client *netlinkext.LinkExt, server *netlin
 		0,
 		0,
 		0,
-		0,
+		20,
 		0,
 		match,
 		instructions,
@@ -943,7 +1093,7 @@ func (c *OFSwitch) addDHCPUnicastFlow(client *netlinkext.LinkExt, server *netlin
 		0,
 		0,
 		0,
-		0,
+		20,
 		0,
 		match,
 		instructions,
@@ -952,5 +1102,256 @@ func (c *OFSwitch) addDHCPUnicastFlow(client *netlinkext.LinkExt, server *netlin
 	if !c.dp.Send(fm) {
 		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
 	}
+	return nil
+}
+
+func (c *OFSwitch) AddDeviceTunnelFlow(linkA DeviceLink, linkB DeviceLink) error {
+	err := c.AddDeviceARPFlow(linkA, linkB)
+	if err != nil {
+		return err
+	}
+
+	err = c.addUnicastDeviceTunnelFlow(linkA, linkB)
+	if err != nil {
+		return err
+	}
+
+	err = c.addUnicastDeviceTunnelFlow(linkB, linkA)
+	if err != nil {
+		return err
+	}
+
+	err = c.addBroadcastDeviceTunnelFlow(linkA, linkB)
+	if err != nil {
+		return err
+	}
+
+	err = c.addBroadcastDeviceTunnelFlow(linkB, linkA)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) addUnicastDeviceTunnelFlow(linkA DeviceLink, linkB DeviceLink) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(linkA.GetOfPort())
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(linkA.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst(linkB.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(linkB.GetOfPort(), OFPCML_NO_BUFFER))
+	instructions := make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm := ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		10,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) addBroadcastDeviceTunnelFlow(linkA DeviceLink, linkB DeviceLink) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(linkA.GetOfPort())
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(linkA.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst("FF:FF:FF:FF:FF:FF")
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(linkB.GetOfPort(), OFPCML_NO_BUFFER))
+	instructions := make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm := ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		10,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) AddDeviceARPFlow(linkA DeviceLink, linkB DeviceLink) error {
+	err := c.addUnicastDeviceARPFlow(linkA, linkB)
+	if err != nil {
+		return err
+	}
+
+	err = c.addUnicastDeviceARPFlow(linkA, c.Link)
+	if err != nil {
+		return err
+	}
+
+	err = c.addUnicastDeviceARPFlow(linkB, linkA)
+	if err != nil {
+		return err
+	}
+
+	err = c.addUnicastDeviceARPFlow(linkB, c.Link)
+	if err != nil {
+		return err
+	}
+
+	err = c.addUnicastDeviceARPFlow(c.Link, linkA)
+	if err != nil {
+		return err
+	}
+
+	err = c.addUnicastDeviceARPFlow(c.Link, linkB)
+	if err != nil {
+		return err
+	}
+
+	err = c.addBroadcastDeviceARPFlow(linkA, linkB, c.Link)
+	if err != nil {
+		return err
+	}
+
+	err = c.addBroadcastDeviceARPFlow(linkB, linkA, c.Link)
+	if err != nil {
+		return err
+	}
+
+	err = c.addBroadcastDeviceARPFlow(c.Link, linkA, linkB)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) addUnicastDeviceARPFlow(linkA DeviceLink, linkB DeviceLink) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(linkA.GetOfPort())
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(linkA.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst(linkB.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType := ofp13.NewOxmEthType(0x806)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(linkB.GetOfPort(), OFPCML_NO_BUFFER))
+	instructions := make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm := ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		20,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) addBroadcastDeviceARPFlow(linkA DeviceLink, linkB DeviceLink, linkC DeviceLink) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(linkA.GetOfPort())
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(linkA.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst("FF:FF:FF:FF:FF:FF")
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType := ofp13.NewOxmEthType(0x806)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(linkB.GetOfPort(), OFPCML_NO_BUFFER))
+	instruction.Append(ofp13.NewOfpActionOutput(linkC.GetOfPort(), OFPCML_NO_BUFFER))
+	instructions := make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm := ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		20,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+
 	return nil
 }

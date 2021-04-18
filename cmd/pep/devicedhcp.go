@@ -14,6 +14,9 @@ import (
 	"github.com/coredhcp/coredhcp/server"
 	"github.com/insomniacslk/dhcp/dhcpv4"
 	"github.com/insomniacslk/dhcp/dhcpv6"
+	"github.com/naoki9911/CREBAS/pkg/app"
+	"github.com/naoki9911/CREBAS/pkg/netlinkext"
+	"github.com/vishvananda/netlink"
 
 	"github.com/coredhcp/coredhcp/plugins"
 	pl_leasetime "github.com/coredhcp/coredhcp/plugins/leasetime"
@@ -50,6 +53,8 @@ var desiredPlugins = []*plugins.Plugin{
 	&pl_leasetime.Plugin,
 	&Plugin,
 }
+
+var srv *server.Servers
 
 func StartDHCPServer() {
 	flag.Parse()
@@ -156,16 +161,46 @@ func handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) {
 		resp.Options.Update(dhcpv4.OptDNS([]net.IP{aclIP}...))
 	}
 
-	//clientIdentifierBytes := req.Options.Get(dhcpv4.OptionClientIdentifier)
-	//if clientIdentifierBytes == nil {
-	//	return resp, true
-	//}
-	//clientIdentifier := string(clientIdentifierBytes)
-	//log.Infof("ClientIdentifier :%v", clientIdentifier)
+	clientIdentifierBytes := req.Options.Get(dhcpv4.OptionClientIdentifier)
+	if clientIdentifierBytes != nil {
+		log.Infof("ClientIdentifier :%v", string(clientIdentifierBytes))
+	}
 
-	deviceIP := net.ParseIP("192.168.20.2")
-	resp.YourIPAddr = deviceIP
-	log.Printf("found IP address %s for MAC %s", resp.YourIPAddr, req.ClientHWAddr.String())
+	selectedDevices := devices.Where(func(d *app.Device) bool {
+		return d.HWAddress.String() == req.ClientHWAddr.String()
+	})
+
+	if len(selectedDevices) == 0 {
+		deviceIP, err := extAddrPool.Lease()
+		if err != nil {
+			log.Infof("Failed to Lease Addr for %v", req.ClientHWAddr.String())
+			return resp, true
+		}
+		device := app.Device{
+			HWAddress: req.ClientHWAddr,
+			IPAddress: deviceIP,
+		}
+		devices.Add(&device)
+
+		resp.YourIPAddr = deviceIP.IP
+		log.Infof("Assigned IP %v for %v", deviceIP.IP.String(), req.ClientHWAddr.String())
+	} else {
+		device := selectedDevices[0]
+		resp.YourIPAddr = device.IPAddress.IP
+		log.Infof("found IP address %s for MAC %s", resp.YourIPAddr, req.ClientHWAddr.String())
+
+		if device.App != nil {
+			if !device.App.IsRunning() {
+				err = startAppWithDevice(device)
+				if err != nil {
+					log.Errorf("failed to start app %v", err)
+					return resp, true
+				}
+				log.Infof("Starting corresponding app %v", device.App.ID())
+			}
+		}
+	}
+
 	return resp, false
 }
 
@@ -175,4 +210,33 @@ func setup4(args ...string) (handler.Handler4, error) {
 
 func setup6(args ...string) (handler.Handler6, error) {
 	return handler6, nil
+}
+
+func startAppWithDevice(device *app.Device) error {
+	proc := device.App.(*app.LinuxProcess)
+	procAddr, err := netlink.ParseAddr(pepConfig.extOfsAppAddr)
+	if err != nil {
+		return err
+	}
+	procLink, err := proc.AddLinkWithAddr(extOfs, netlinkext.ExternalOFSwitch, procAddr)
+	if err != nil {
+		return err
+	}
+
+	err = extOfs.AddDeviceTunnelFlow(device, procLink)
+	if err != nil {
+		return err
+	}
+
+	err = extOfs.DeleteHostARPFlow(device)
+	if err != nil {
+		return err
+	}
+
+	err = device.App.Start()
+	if err != nil {
+		return err
+	}
+	fmt.Println("APP NAMESPACE:" + proc.NameSpace())
+	return nil
 }

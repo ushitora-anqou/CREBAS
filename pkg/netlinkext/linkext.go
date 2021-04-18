@@ -1,6 +1,7 @@
 package netlinkext
 
 import (
+	"net"
 	"runtime"
 
 	"github.com/vishvananda/netlink"
@@ -199,4 +200,16 @@ func (l *LinkExt) SetLinkPeerUp() error {
 
 func (l *LinkExt) SetLink(link netlink.Link) {
 	l.link = link
+}
+
+func (l *LinkExt) GetHWAddress() net.HardwareAddr {
+	return l.link.Attrs().HardwareAddr
+}
+
+func (l *LinkExt) GetIPAddress() *netlink.Addr {
+	return l.Addr
+}
+
+func (l *LinkExt) GetOfPort() uint32 {
+	return l.Ofport
 }
