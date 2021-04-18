@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func getOFPortByLinkName(name string) (uint32, error) {
+func GetOFPortByLinkName(name string) (uint32, error) {
 	cmd := exec.Command("ovs-vsctl", "--columns=name,ofport", "list", "interface", name)
 	out, err := cmd.Output()
 	if err != nil {

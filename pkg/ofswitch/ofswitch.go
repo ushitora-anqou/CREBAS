@@ -177,14 +177,14 @@ func (c *OFSwitch) AttachLink(linkExt *netlinkext.LinkExt, ofType netlinkext.OFT
 	switch link := linkExt.GetLink().(type) {
 	case *netlink.Veth:
 		c.client.VSwitch.AddPort(c.Name, link.PeerName)
-		ofport, err := getOFPortByLinkName(link.PeerName)
+		ofport, err := GetOFPortByLinkName(link.PeerName)
 		if err != nil {
 			return err
 		}
 		linkExt.Ofport = ofport
 	case *netlink.Bridge:
 		c.client.VSwitch.AddPort(c.Name, link.Name)
-		ofport, err := getOFPortByLinkName(link.Name)
+		ofport, err := GetOFPortByLinkName(link.Name)
 		if err != nil {
 			return err
 		}

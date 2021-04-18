@@ -168,16 +168,22 @@ func prepareTestPkg() {
 }
 
 func setupWiFi() error {
-	link, err := netlink.LinkByName("br0")
+	link, err := netlink.LinkByName("wlan0")
 	if err != nil {
 		return err
 	}
 	linkExt := &netlinkext.LinkExt{}
 	linkExt.SetLink(link)
 
-	err = extOfs.AttachLink(linkExt, netlinkext.ExternalOFSwitch)
-	if err != nil {
-		return err
+	for {
+		ofport, err := ofswitch.GetOFPortByLinkName("wlan0")
+		if err == nil {
+			log.Printf("Found OfPort wlan0 %v", ofport)
+			linkExt.Ofport = ofport
+			break
+		}
+		log.Printf("Not Found OfPort for wlan0")
+		time.Sleep(1 * time.Second)
 	}
 	extOfs.AddHostPortPassthroughFlow(linkExt)
 	return nil
