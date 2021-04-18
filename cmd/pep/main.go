@@ -33,6 +33,7 @@ func main() {
 	defer clearNetwork()
 	prepareTestPkg()
 	go startDNSServer(aclOfs)
+	go StartDHCPServer()
 	StartAPIServer()
 }
 

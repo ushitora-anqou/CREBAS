@@ -80,15 +80,14 @@ func TestStartAppFromPkg(t *testing.T) {
 	defer pkgs.Clear()
 	defer apps.Clear()
 
+	startOFController()
+	defer controller.Stop()
+
 	err := prepareNetwork()
 	if err != nil {
 		panic(err)
 	}
 	defer clearNetwork()
-	startOFController()
-	appendOFSwitchToController(aclOfs)
-	waitOFSwitchConnectedToController(aclOfs)
-	defer controller.Stop()
 
 	pkgInfo := pkg.CreateSkeltonPackageInfo()
 	pkgInfo.MetaInfo.CMD = []string{"/bin/bash", "-c", "sleep 3"}
