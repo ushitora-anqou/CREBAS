@@ -201,6 +201,10 @@ func (c *OFSwitch) IsConnectedToController() bool {
 	return c.dp != nil
 }
 
+func (c *OFSwitch) ClearController() {
+	c.dp = nil
+}
+
 func (c *OFSwitch) AddHostRestrictedFlow(link *netlinkext.LinkExt) error {
 	err := c.AddARPFlow(link, c.Link)
 	if err != nil {
