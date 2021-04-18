@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/naoki9911/CREBAS/pkg/app"
+	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 	"github.com/naoki9911/CREBAS/pkg/ofswitch"
 	"github.com/naoki9911/CREBAS/pkg/pkg"
 	"github.com/naoki9911/gofc"
@@ -32,6 +33,10 @@ func main() {
 	}
 	defer clearNetwork()
 	prepareTestPkg()
+	err = setupWiFi()
+	if err != nil {
+		log.Printf("ERROR %v", err)
+	}
 	go startDNSServer(aclOfs)
 	go StartDHCPServer()
 	StartAPIServer()
@@ -160,4 +165,17 @@ func prepareTestPkg() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func setupWiFi() error {
+	link, err := netlink.LinkByName("wlan0")
+	if err != nil {
+		return err
+	}
+	linkExt := &netlinkext.LinkExt{}
+	linkExt.SetLink(link)
+
+	extOfs.AttachLink(linkExt, netlinkext.ExternalOFSwitch)
+	extOfs.AddHostPortPassthroughFlow(linkExt)
+	return nil
 }

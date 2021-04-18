@@ -1355,3 +1355,49 @@ func (c *OFSwitch) addBroadcastDeviceARPFlow(linkA DeviceLink, linkB DeviceLink,
 
 	return nil
 }
+
+func (c *OFSwitch) AddPortPassthroughFlow(linkA DeviceLink, linkB DeviceLink) error {
+	err := c.addPortPassthroughFlow(linkA, linkB)
+	if err != nil {
+		return err
+	}
+
+	err = c.addPortPassthroughFlow(linkB, linkA)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) AddHostPortPassthroughFlow(link DeviceLink) error {
+	return c.addPortPassthroughFlow(link, c.Link)
+}
+
+func (c *OFSwitch) addPortPassthroughFlow(linkA DeviceLink, linkB DeviceLink) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(linkA.GetOfPort())
+	match.Append(inport)
+
+	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(linkB.GetOfPort(), OFPCML_NO_BUFFER))
+	instructions := make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm := ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		0,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+
+	return nil
+}
