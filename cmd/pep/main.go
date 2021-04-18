@@ -22,16 +22,15 @@ var appAddrPool = &ofswitch.IP4AddrPool{}
 var extAddrPool = &ofswitch.IP4AddrPool{}
 var controller = gofc.NewOFController()
 var dnsServer = "8.8.8.8:53"
+var pepConfig = NewConfig()
 
 func main() {
+	startOFController()
 	err := prepareNetwork()
 	if err != nil {
 		panic(err)
 	}
 	defer clearNetwork()
-	startOFController()
-	appendOFSwitchToController(aclOfs)
-	waitOFSwitchConnectedToController(aclOfs)
 	prepareTestPkg()
 	go startDNSServer(aclOfs)
 	StartAPIServer()
@@ -59,14 +58,16 @@ func waitOFSwitchConnectedToController(c *ofswitch.OFSwitch) {
 }
 
 func prepareNetwork() error {
-	aclOfs = ofswitch.NewOFSwitch("crebas-acl-ofs")
+	aclOfs = ofswitch.NewOFSwitch(pepConfig.aclOfsName)
 	aclOfs.Delete()
 	err := aclOfs.Create()
 	if err != nil {
 		return err
 	}
 
-	addr, err := netlink.ParseAddr("192.168.10.1/24")
+	appendOFSwitchToController(aclOfs)
+
+	addr, err := netlink.ParseAddr(pepConfig.aclOfsAddr)
 	if err != nil {
 		return err
 	}
@@ -85,13 +86,18 @@ func prepareNetwork() error {
 		return err
 	}
 
-	extOfs = ofswitch.NewOFSwitch("crebas-ext-ofs")
+	waitOFSwitchConnectedToController(aclOfs)
+
+	extOfs = ofswitch.NewOFSwitch(pepConfig.extOfsName)
 	extOfs.Delete()
 	err = extOfs.Create()
 	if err != nil {
 		return err
 	}
-	addr, err = netlink.ParseAddr("192.168.20.1/24")
+
+	appendOFSwitchToController(extOfs)
+
+	addr, err = netlink.ParseAddr(pepConfig.extOfsAddr)
 	if err != nil {
 		return err
 	}
@@ -110,11 +116,22 @@ func prepareNetwork() error {
 		return err
 	}
 
+	waitOFSwitchConnectedToController(extOfs)
+
 	return nil
 }
 
 func clearNetwork() error {
-	return aclOfs.Delete()
+	err := aclOfs.Delete()
+	if err != nil {
+		return err
+	}
+	err = extOfs.Delete()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func prepareTestPkg() {

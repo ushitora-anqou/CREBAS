@@ -174,10 +174,10 @@ func (p *LinuxProcess) AddLink(ofs *ofswitch.OFSwitch, ofType netlinkext.OFType)
 		return nil, err
 	}
 
-	//err = link.SetLinkUp()
-	//if err != nil {
-	//	return nil, err
-	//}
+	err = link.SetLinkUp()
+	if err != nil {
+		return nil, err
+	}
 
 	p.links.Add(link)
 

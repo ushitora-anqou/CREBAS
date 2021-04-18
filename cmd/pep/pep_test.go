@@ -337,46 +337,19 @@ func TestExtCommunication(t *testing.T) {
 
 func TestDNSCommunication(t *testing.T) {
 	pkgDir := "/tmp/pep_test"
-	ovsName := "ovs-test-set"
 	apps.Clear()
 
 	startOFController()
 	defer controller.Stop()
 	time.Sleep(time.Second)
 
-	aclOfs := ofswitch.NewOFSwitch(ovsName)
-	aclOfs.Delete()
-	err := aclOfs.Create()
+	err := prepareNetwork()
 	if err != nil {
-		t.Fatalf("failed test %#v", err)
+		t.Fatalf("failed test %v", err)
 	}
-	defer aclOfs.Delete()
-
-	appendOFSwitchToController(aclOfs)
-
-	addr, err := netlink.ParseAddr("192.168.10.1/24")
-	if err != nil {
-		t.Fatalf("failed test %#v", err)
-	}
-	err = aclOfs.SetAddr(addr)
-	if err != nil {
-		t.Fatalf("failed test %#v", err)
-	}
-
-	err = aclOfs.SetController("tcp:127.0.0.1:6653")
-	if err != nil {
-		t.Fatalf("failed test %#v", err)
-	}
-
-	waitOFSwitchConnectedToController(aclOfs)
+	defer clearNetwork()
 
 	go startDNSServer(aclOfs)
-
-	addrPool := ofswitch.NewIP4AddrPool(addr)
-	err = addrPool.LeaseWithAddr(addr)
-	if err != nil {
-		t.Fatalf("failed test %#v", err)
-	}
 
 	pkg1 := pkg.CreateSkeltonPackageInfo()
 	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "dig net.ist.i.kyoto-u.ac.jp"}
@@ -388,7 +361,7 @@ func TestDNSCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
-	proc1Addr, err := addrPool.Lease()
+	proc1Addr, err := appAddrPool.Lease()
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
@@ -423,53 +396,25 @@ func TestDNSCommunication(t *testing.T) {
 
 func TestDHCPCommunication(t *testing.T) {
 	pkgDir := "/tmp/pep_test"
-	ovsName := "crebas-ext-ofs"
 	apps.Clear()
 
 	startOFController()
 	defer controller.Stop()
 	time.Sleep(time.Second)
 
-	extOfs := ofswitch.NewOFSwitch(ovsName)
-	extOfs.Delete()
-	err := extOfs.Create()
+	err := prepareNetwork()
 	if err != nil {
-		t.Fatalf("failed test %#v", err)
+		t.Fatalf("failed test %v", err)
 	}
-	defer extOfs.Delete()
-
-	appendOFSwitchToController(extOfs)
-
-	addr, err := netlink.ParseAddr("192.168.20.1/24")
-	if err != nil {
-		t.Fatalf("failed test %#v", err)
-	}
-	err = extOfs.SetAddr(addr)
-	if err != nil {
-		t.Fatalf("failed test %#v", err)
-	}
-
-	err = extOfs.SetController("tcp:127.0.0.1:6653")
-	if err != nil {
-		t.Fatalf("failed test %#v", err)
-	}
-
-	waitOFSwitchConnectedToController(extOfs)
-
+	defer clearNetwork()
 	go StartDHCPServer()
-
-	addrPool := ofswitch.NewIP4AddrPool(addr)
-	err = addrPool.LeaseWithAddr(addr)
-	if err != nil {
-		t.Fatalf("failed test %#v", err)
-	}
 
 	pkg1 := pkg.CreateSkeltonPackageInfo()
 	proc1, err := app.NewLinuxProcessFromPkgInfo(pkg1)
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
-	addr, err = addrPool.Lease()
+	addr, err := extAddrPool.Lease()
 	if err != nil {
 		t.Fatalf("failed test %#v", err)
 	}
@@ -498,7 +443,6 @@ func TestDHCPCommunication(t *testing.T) {
 	}
 
 	apps.Add(proc1)
-	time.Sleep(5 * time.Second)
 	proc1.Start()
 	time.Sleep(120 * time.Second)
 	assert.Equal(t, proc1.IsRunning(), false)

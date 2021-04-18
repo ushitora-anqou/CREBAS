@@ -88,7 +88,7 @@ func StartDHCPServer() {
 	listener := net.UDPAddr{
 		IP:   net.IPv4zero,
 		Port: dhcpv4.ServerPort,
-		Zone: "crebas-ext-ofs",
+		Zone: pepConfig.extOfsName,
 	}
 
 	server4Config.Addresses = []net.UDPAddr{listener}
@@ -131,7 +131,7 @@ func handler6(req, resp dhcpv6.DHCPv6) (dhcpv6.DHCPv6, bool) {
 func handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) {
 	fmt.Println("HANDLE")
 	log := logger.GetLogger("dhcpserver")
-	routerIP := "192.168.20.1/24"
+	routerIP := pepConfig.extOfsAddr
 	ovsIP, ovsSubnet, err := net.ParseCIDR(routerIP)
 	if err != nil {
 		log.Errorf("Failed to parse : %v", routerIP)
@@ -148,9 +148,12 @@ func handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) {
 	resp.UpdateOption(dhcpv4.OptServerIdentifier(ovsIP))
 
 	// Update DNS information
-	dnsIP := net.ParseIP("192.168.10.1")
+	aclIP, _, err := net.ParseCIDR(pepConfig.aclOfsAddr)
+	if err != nil {
+		log.Errorf("Failed to parse : %v", pepConfig.aclOfsAddr)
+	}
 	if req.IsOptionRequested(dhcpv4.OptionDomainNameServer) {
-		resp.Options.Update(dhcpv4.OptDNS([]net.IP{dnsIP}...))
+		resp.Options.Update(dhcpv4.OptDNS([]net.IP{aclIP}...))
 	}
 
 	//clientIdentifierBytes := req.Options.Get(dhcpv4.OptionClientIdentifier)
