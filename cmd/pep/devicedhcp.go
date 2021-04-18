@@ -28,7 +28,6 @@ var (
 	flagLogFile     = flag.String("logfile", "", "Name of the log file to append to. Default: stdout/stderr only")
 	flagLogNoStdout = flag.Bool("nostdout", false, "Disable logging to stdout/stderr")
 	flagLogLevel    = flag.String("loglevel", "info", fmt.Sprintf("Log level. One of %v", getLogLevels()))
-	flagConfig      = flag.String("conf", "", "Use this configuration file instead of the default location")
 	flagPlugins     = flag.Bool("plugins", false, "list plugins")
 )
 
@@ -110,7 +109,8 @@ func StartDHCPServer() {
 	conf.Server4 = &server4Config
 
 	// start server
-	srv, err := server.Start(conf)
+	var err error
+	srv, err = server.Start(conf)
 	if err != nil {
 		log.Fatal(err)
 	}
