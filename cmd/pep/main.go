@@ -156,7 +156,7 @@ func prepareTestPkg() error {
 	pkgDir := "/tmp/pep_test"
 
 	pkg1 := pkg.CreateSkeltonPackageInfo()
-	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "sleep 500"}
+	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "while true; do sleep 1; done"}
 	proc1, err := app.NewLinuxProcessFromPkgInfo(pkg1)
 	if err != nil {
 		return err
@@ -185,7 +185,7 @@ func prepareTestPkg() error {
 	devices.Add(device)
 
 	pkg2 := pkg.CreateSkeltonPackageInfo()
-	pkg2.MetaInfo.CMD = []string{"/bin/bash", "-c", "sleep 500"}
+	pkg2.MetaInfo.CMD = []string{"/bin/bash", "-c", "while true; do sleep 1; done"}
 	proc2, err := app.NewLinuxProcessFromPkgInfo(pkg2)
 	if err != nil {
 		return err
