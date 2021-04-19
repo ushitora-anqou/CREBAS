@@ -184,6 +184,35 @@ func prepareTestPkg() error {
 
 	devices.Add(device)
 
+	pkg2 := pkg.CreateSkeltonPackageInfo()
+	pkg2.MetaInfo.CMD = []string{"/bin/bash", "-c", "sleep 500"}
+	proc2, err := app.NewLinuxProcessFromPkgInfo(pkg2)
+	if err != nil {
+		return err
+	}
+	err = pkg.CreateUnpackedPackage(pkg2, pkgDir)
+	if err != nil {
+		return err
+	}
+
+	device2IP, err := extAddrPool.Lease()
+	if err != nil {
+		return err
+	}
+	hwAddr2, err := net.ParseMAC("80:7d:3a:c8:2b:5c")
+	if err != nil {
+		return err
+	}
+	device2 := &app.Device{
+		HWAddress: hwAddr2,
+		IPAddress: device2IP,
+		App:       proc2,
+		OfPort:    pepConfig.wifiLink.GetOfPort(),
+		ViaWlan:   true,
+	}
+
+	devices.Add(device2)
+
 	return nil
 }
 
