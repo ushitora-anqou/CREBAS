@@ -391,12 +391,6 @@ func (c *OFSwitch) getHostAggregatedDHCPFlowMatchingClientBroadcast(link DeviceL
 	ethType := ofp13.NewOxmEthType(0x0800)
 	match.Append(ethType)
 
-	ipSrc, err := ofp13.NewOxmIpv4Src(net.IPv4zero.String())
-	if err != nil {
-		return nil, err
-	}
-	match.Append(ipSrc)
-
 	ipDst, err := ofp13.NewOxmIpv4Dst(net.IPv4bcast.String())
 	if err != nil {
 		return nil, err
