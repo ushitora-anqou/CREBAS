@@ -185,7 +185,10 @@ func setupWiFi() error {
 		log.Printf("Not Found OfPort for wlan0")
 		time.Sleep(1 * time.Second)
 	}
-	extOfs.ClearController()
+	err = extOfs.ResetController()
+	if err != nil {
+		return err
+	}
 	waitOFSwitchConnectedToController(extOfs)
 	err = extOfs.AddHostPortPassthroughFlow(linkExt)
 	if err != nil {
