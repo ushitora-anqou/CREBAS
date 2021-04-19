@@ -1,11 +1,16 @@
 package main
 
+import (
+	"github.com/naoki9911/CREBAS/pkg/netlinkext"
+)
+
 type Config struct {
 	aclOfsName    string
 	aclOfsAddr    string
 	extOfsName    string
 	extOfsAddr    string
 	extOfsAppAddr string
+	wifiLink      *netlinkext.LinkExt
 }
 
 func NewConfig() *Config {

@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"os/exec"
+	"net"
 	"time"
 
 	"github.com/naoki9911/CREBAS/pkg/app"
@@ -32,10 +32,13 @@ func main() {
 		panic(err)
 	}
 	defer clearNetwork()
-	prepareTestPkg()
 	err = setupWiFi()
 	if err != nil {
-		log.Printf("ERROR %v", err)
+		panic(err)
+	}
+	err = prepareTestPkg()
+	if err != nil {
+		panic(err)
 	}
 	go startDNSServer(aclOfs)
 	go StartDHCPServer()
@@ -149,22 +152,38 @@ func clearNetwork() error {
 	return nil
 }
 
-func prepareTestPkg() {
-	testPkgsDir := "/tmp/pep_test"
-	exec.Command("rm", "-rf", testPkgsDir).Run()
-	exec.Command("mkdir", "-p", testPkgsDir).Run()
+func prepareTestPkg() error {
+	pkgDir := "/tmp/pep_test"
 
-	pkgInfo := pkg.CreateSkeltonPackageInfo()
-	pkgInfo.MetaInfo.CMD = []string{"echo", "HELLO"}
-	err := pkg.CreatePackage(pkgInfo, testPkgsDir)
+	pkg1 := pkg.CreateSkeltonPackageInfo()
+	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "sleep 500"}
+	proc1, err := app.NewLinuxProcessFromPkgInfo(pkg1)
 	if err != nil {
-		panic(err)
+		return err
+	}
+	err = pkg.CreateUnpackedPackage(pkg1, pkgDir)
+	if err != nil {
+		return err
 	}
 
-	err = pkgs.LoadPkgs(testPkgsDir)
+	deviceIP, err := extAddrPool.Lease()
 	if err != nil {
-		panic(err)
+		return err
 	}
+	hwAddr, err := net.ParseMAC("58:cb:52:56:73:21")
+	if err != nil {
+		return err
+	}
+	device := &app.Device{
+		HWAddress: hwAddr,
+		IPAddress: deviceIP,
+		App:       proc1,
+		OfPort:    pepConfig.wifiLink.GetOfPort(),
+	}
+
+	devices.Add(device)
+
+	return nil
 }
 
 func setupWiFi() error {
@@ -191,6 +210,9 @@ func setupWiFi() error {
 	}
 	log.Printf("Reset Controller")
 	waitOFSwitchConnectedToController(extOfs)
+
+	pepConfig.wifiLink = linkExt
+
 	err = extOfs.AddHostEAPoLFlow(linkExt)
 	if err != nil {
 		return err
