@@ -195,5 +195,9 @@ func setupWiFi() error {
 	if err != nil {
 		return err
 	}
+	err = extOfs.AddHostAggregatedARPFlow(linkExt)
+	if err != nil {
+		return err
+	}
 	return nil
 }
