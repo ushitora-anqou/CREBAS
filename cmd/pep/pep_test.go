@@ -392,6 +392,8 @@ func TestDNSCommunication(t *testing.T) {
 	time.Sleep(5 * time.Second)
 	assert.Equal(t, proc1.IsRunning(), false)
 	assert.Equal(t, proc1.GetExitCode(), 0)
+
+	proc1.Stop()
 }
 
 func TestDHCPCommunication(t *testing.T) {
@@ -462,6 +464,9 @@ func TestDHCPCommunication(t *testing.T) {
 	time.Sleep(10 * time.Second)
 	assert.Equal(t, proc1.IsRunning(), false)
 	assert.Equal(t, proc1.GetExitCode(), 0)
+
+	proc1.Stop()
+	proc2.Stop()
 }
 
 func init() {
