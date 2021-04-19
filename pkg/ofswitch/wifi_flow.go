@@ -302,13 +302,14 @@ func (c *OFSwitch) getHostAggregatedDHCPFlowMatchingHost(link DeviceLink) (*ofp1
 	}
 	match.Append(ethsrc)
 
-	ethType := ofp13.NewOxmEthType(0x8000)
+	ethType := ofp13.NewOxmEthType(0x0800)
 	if err != nil {
 		return nil, err
 	}
 	match.Append(ethType)
 
-	ipSrc, err := ofp13.NewOxmIpv4Src(c.Link.GetIPAddress().String())
+	fmt.Println(c.Link.GetIPAddress().IP.String())
+	ipSrc, err := ofp13.NewOxmIpv4Src(c.Link.GetIPAddress().IP.String())
 	if err != nil {
 		return nil, err
 	}
@@ -390,7 +391,7 @@ func (c *OFSwitch) getHostAggregatedDHCPFlowMatchingClientBroadcast(link DeviceL
 	}
 	match.Append(ethdst)
 
-	ethType := ofp13.NewOxmEthType(0x8000)
+	ethType := ofp13.NewOxmEthType(0x0800)
 	if err != nil {
 		return nil, err
 	}
@@ -484,13 +485,13 @@ func (c *OFSwitch) getHostAggregatedDHCPFlowMatchingClientUnicast(link DeviceLin
 	}
 	match.Append(ethdst)
 
-	ethType := ofp13.NewOxmEthType(0x8000)
+	ethType := ofp13.NewOxmEthType(0x0800)
 	if err != nil {
 		return nil, err
 	}
 	match.Append(ethType)
 
-	ipDst, err := ofp13.NewOxmIpv4Dst(c.Link.GetIPAddress().String())
+	ipDst, err := ofp13.NewOxmIpv4Dst(c.Link.GetIPAddress().IP.String())
 	if err != nil {
 		return nil, err
 	}
