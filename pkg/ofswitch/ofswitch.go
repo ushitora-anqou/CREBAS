@@ -107,7 +107,7 @@ func (s *OFSwitch) SetAddr(addr *netlink.Addr) error {
 // HandleSwitchFeatures handle ovs features
 func (c *OFSwitch) HandleSwitchFeatures(msg *ofp13.OfpSwitchFeatures, dp *gofc.Datapath) {
 	if msg.DatapathId != c.DatapathID {
-		fmt.Printf("%v %v\n", msg.DatapathId, c.DatapathID)
+		fmt.Printf("switch:%v msg:%v switch:%v\n", c.Name,msg.DatapathId, c.DatapathID)
 		return
 	}
 	c.dp = dp
