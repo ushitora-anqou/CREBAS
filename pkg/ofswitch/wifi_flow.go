@@ -339,7 +339,7 @@ func (c *OFSwitch) addHostAggregatedDHCPFlowHost(link DeviceLink) error {
 		0,
 		0,
 		0,
-		00,
+		200,
 		0,
 		match,
 		instructions,
@@ -430,7 +430,7 @@ func (c *OFSwitch) addHostAggregatedDHCPFlowClientBroadcast(link DeviceLink) err
 		0,
 		0,
 		0,
-		00,
+		200,
 		0,
 		match,
 		instructions,
@@ -515,7 +515,7 @@ func (c *OFSwitch) addHostAggregatedDHCPFlowClientUnicast(link DeviceLink) error
 		0,
 		0,
 		0,
-		00,
+		200,
 		0,
 		match,
 		instructions,
@@ -626,6 +626,60 @@ func (c *OFSwitch) AddDeviceAppARPFlow(deviceLink DeviceLink, appLink DeviceLink
 		return err
 	}
 	match.Append(arpDst)
+
+	err = c.SendFlowModAddOutput(match, deviceLink.GetOfPort(), 100)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) AddDeviceAppIPFlow(deviceLink DeviceLink, appLink DeviceLink) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(deviceLink.GetOfPort())
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(deviceLink.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethType := ofp13.NewOxmEthType(0x0800)
+	match.Append(ethType)
+
+	ipSrc, err := ofp13.NewOxmIpv4Src(deviceLink.GetIPAddress().IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipSrc)
+
+	err = c.SendFlowModAddOutput(match, appLink.GetOfPort(), 100)
+	if err != nil {
+		return err
+	}
+
+	match = ofp13.NewOfpMatch()
+
+	inport = ofp13.NewOxmInPort(appLink.GetOfPort())
+	match.Append(inport)
+
+	ethsrc, err = ofp13.NewOxmEthSrc(appLink.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethType = ofp13.NewOxmEthType(0x0800)
+	match.Append(ethType)
+
+	ipSrc, err = ofp13.NewOxmIpv4Src(appLink.GetIPAddress().IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipSrc)
 
 	err = c.SendFlowModAddOutput(match, deviceLink.GetOfPort(), 100)
 	if err != nil {
