@@ -212,6 +212,10 @@ func startAppWithDevice(device *app.Device) error {
 		if err != nil {
 			return err
 		}
+		err = extOfs.AddDeviceAppARPFlow(procLink, device)
+		if err != nil {
+			return err
+		}
 		err = extOfs.AddDeviceAppIPFlow(device, procLink)
 		if err != nil {
 			return err
