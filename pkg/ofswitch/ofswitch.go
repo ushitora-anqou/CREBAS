@@ -201,8 +201,23 @@ func (c *OFSwitch) IsConnectedToController() bool {
 	return c.dp != nil
 }
 
-func (c *OFSwitch) ClearController() {
+func (c *OFSwitch) ResetController() error {
+	out, err := exec.Command("ovs-vsctl", "get", "bridge", c.Name, "datapath-id").Output()
+	if err != nil {
+		log.Printf("error: Failed to get %v DatapthID", c.Name)
+		return err
+	}
+
+	// format '"xxxxxx(datapathID)"'
+	datapathIDStr := strings.Trim(string(out), "\n")
+	c.DatapathID, err = strconv.ParseUint(datapathIDStr[1:len(datapathIDStr)-1], 16, 64)
+	if err != nil {
+		return err
+	}
+
 	c.dp = nil
+
+	return nil
 }
 
 func (c *OFSwitch) AddHostRestrictedFlow(link *netlinkext.LinkExt) error {
