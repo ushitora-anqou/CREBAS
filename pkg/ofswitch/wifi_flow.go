@@ -551,3 +551,86 @@ func (c *OFSwitch) deleteHostAggregatedDHCPFlowClientUnicast(link DeviceLink) er
 
 	return nil
 }
+
+func (c *OFSwitch) SendFlowModAddOutput(match *ofp13.OfpMatch, outport uint32, priority uint16) error {
+	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
+	instruction.Append(ofp13.NewOfpActionOutput(outport, OFPCML_NO_BUFFER))
+	instructions := make([]ofp13.OfpInstruction, 0)
+	instructions = append(instructions, instruction)
+
+	fm := ofp13.NewOfpFlowModAdd(
+		0,
+		0,
+		0,
+		priority,
+		0,
+		match,
+		instructions,
+	)
+
+	if !c.dp.Send(fm) {
+		return fmt.Errorf("failed to send flow to switch(%v)", c.Name)
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) AddDeviceAppARPFlow(deviceLink DeviceLink, appLink DeviceLink) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(deviceLink.GetOfPort())
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(deviceLink.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethType := ofp13.NewOxmEthType(0x0806)
+	match.Append(ethType)
+
+	arpType := ofp13.NewOxmArpOp(1)
+	match.Append(arpType)
+
+	arpDst, err := ofp13.NewOxmArpTpa(appLink.GetIPAddress().IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(arpDst)
+
+	err = c.SendFlowModAddOutput(match, appLink.GetOfPort(), 100)
+	if err != nil {
+		return err
+	}
+
+	match = ofp13.NewOfpMatch()
+
+	inport = ofp13.NewOxmInPort(appLink.GetOfPort())
+	match.Append(inport)
+
+	ethsrc, err = ofp13.NewOxmEthSrc(appLink.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethType = ofp13.NewOxmEthType(0x0806)
+	match.Append(ethType)
+
+	arpType = ofp13.NewOxmArpOp(2)
+	match.Append(arpType)
+
+	arpDst, err = ofp13.NewOxmArpSpa(appLink.GetIPAddress().IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(arpDst)
+
+	err = c.SendFlowModAddOutput(match, deviceLink.GetOfPort(), 100)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

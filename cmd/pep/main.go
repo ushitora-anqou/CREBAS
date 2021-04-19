@@ -179,6 +179,7 @@ func prepareTestPkg() error {
 		IPAddress: deviceIP,
 		App:       proc1,
 		OfPort:    pepConfig.wifiLink.GetOfPort(),
+		ViaWlan:   true,
 	}
 
 	devices.Add(device)

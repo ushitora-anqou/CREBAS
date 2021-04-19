@@ -208,6 +208,10 @@ func startAppWithDevice(device *app.Device) error {
 	}
 
 	if device.GetViaWlan() {
+		err = extOfs.AddDeviceAppARPFlow(device, procLink)
+		if err != nil {
+			return err
+		}
 	} else {
 		err = extOfs.AddDeviceTunnelFlow(device, procLink)
 		if err != nil {
