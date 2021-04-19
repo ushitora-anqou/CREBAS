@@ -46,7 +46,7 @@ func (c *OFSwitch) getHostAggregatedARPFlowMatchingHost(link DeviceLink) (*ofp13
 	inport := ofp13.NewOxmInPort(c.Link.GetOfPort())
 	match.Append(inport)
 
-	ethsrc, err := ofp13.NewOxmEthSrc(c.Link.GetHWAddress().String())
+	ethsrc, err := ofp13.NewOxmEthSrc(link.GetHWAddress().String())
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (c *OFSwitch) getHostAggregatedARPFlowMatchingClientUnicast(link DeviceLink
 	inport := ofp13.NewOxmInPort(link.GetOfPort())
 	match.Append(inport)
 
-	ethdst, err := ofp13.NewOxmEthDst(c.Link.GetHWAddress().String())
+	ethdst, err := ofp13.NewOxmEthDst(link.GetHWAddress().String())
 	if err != nil {
 		return nil, err
 	}
@@ -296,11 +296,11 @@ func (c *OFSwitch) getHostAggregatedDHCPFlowMatchingHost(link DeviceLink) (*ofp1
 	inport := ofp13.NewOxmInPort(c.Link.GetOfPort())
 	match.Append(inport)
 
-	//ethsrc, err := ofp13.NewOxmEthSrc(link.GetHWAddress().String())
-	//if err != nil {
-	//	return nil, err
-	//}
-	//match.Append(ethsrc)
+	ethsrc, err := ofp13.NewOxmEthSrc(link.GetHWAddress().String())
+	if err != nil {
+		return nil, err
+	}
+	match.Append(ethsrc)
 
 	ethType := ofp13.NewOxmEthType(0x0800)
 	match.Append(ethType)
@@ -473,11 +473,11 @@ func (c *OFSwitch) getHostAggregatedDHCPFlowMatchingClientUnicast(link DeviceLin
 	inport := ofp13.NewOxmInPort(link.GetOfPort())
 	match.Append(inport)
 
-	//ethdst, err := ofp13.NewOxmEthDst(c.Link.GetHWAddress().String())
-	//if err != nil {
-	//	return nil, err
-	//}
-	//match.Append(ethdst)
+	ethdst, err := ofp13.NewOxmEthDst(link.GetHWAddress().String())
+	if err != nil {
+		return nil, err
+	}
+	match.Append(ethdst)
 
 	ethType := ofp13.NewOxmEthType(0x0800)
 	match.Append(ethType)
