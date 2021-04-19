@@ -207,14 +207,17 @@ func startAppWithDevice(device *app.Device) error {
 		return err
 	}
 
-	err = extOfs.AddDeviceTunnelFlow(device, procLink)
-	if err != nil {
-		return err
-	}
+	if device.GetViaWlan() {
+	} else {
+		err = extOfs.AddDeviceTunnelFlow(device, procLink)
+		if err != nil {
+			return err
+		}
 
-	err = extOfs.DeleteHostARPFlow(device)
-	if err != nil {
-		return err
+		err = extOfs.DeleteHostARPFlow(device)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = device.App.Start()

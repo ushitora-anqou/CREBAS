@@ -456,6 +456,7 @@ func TestDHCPCommunication(t *testing.T) {
 		IPAddress: deviceIP,
 		App:       proc2,
 		OfPort:    proc1Link.Ofport,
+		ViaWlan:   false,
 	}
 	fmt.Println(proc1.NameSpace())
 	devices.Add(&device)

@@ -10,4 +10,5 @@ type DeviceLink interface {
 	GetHWAddress() net.HardwareAddr
 	GetIPAddress() *netlink.Addr
 	GetOfPort() uint32
+	GetViaWlan() bool
 }

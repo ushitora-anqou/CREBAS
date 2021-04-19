@@ -213,3 +213,7 @@ func (l *LinkExt) GetIPAddress() *netlink.Addr {
 func (l *LinkExt) GetOfPort() uint32 {
 	return l.Ofport
 }
+
+func (l *LinkExt) GetViaWlan() bool {
+	return false
+}

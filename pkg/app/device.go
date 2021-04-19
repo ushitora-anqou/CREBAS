@@ -11,6 +11,7 @@ type Device struct {
 	IPAddress *netlink.Addr    `json:"ipAddress"`
 	App       AppInterface
 	OfPort    uint32
+	ViaWlan   bool
 }
 
 func (d *Device) GetHWAddress() net.HardwareAddr {
@@ -23,4 +24,8 @@ func (d *Device) GetIPAddress() *netlink.Addr {
 
 func (d *Device) GetOfPort() uint32 {
 	return d.OfPort
+}
+
+func (d *Device) GetViaWlan() bool {
+	return d.ViaWlan
 }
