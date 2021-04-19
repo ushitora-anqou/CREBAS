@@ -485,10 +485,10 @@ func (c *OFSwitch) getHostAggregatedDHCPFlowMatchingClientUnicast(link DeviceLin
 	ipProto := ofp13.NewOxmIpProto(17)
 	match.Append(ipProto)
 
-	udpSrc := ofp13.NewOxmUdpSrc(67)
+	udpSrc := ofp13.NewOxmUdpSrc(68)
 	match.Append(udpSrc)
 
-	udpDst := ofp13.NewOxmUdpDst(68)
+	udpDst := ofp13.NewOxmUdpDst(67)
 	match.Append(udpDst)
 
 	return match, nil
