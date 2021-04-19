@@ -587,6 +587,12 @@ func (c *OFSwitch) AddDeviceAppARPFlow(deviceLink DeviceLink, appLink DeviceLink
 	arpType := ofp13.NewOxmArpOp(1)
 	match.Append(arpType)
 
+	arpSrc, err := ofp13.NewOxmArpSpa(deviceLink.GetIPAddress().IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(arpSrc)
+
 	arpDst, err := ofp13.NewOxmArpTpa(appLink.GetIPAddress().IP.String())
 	if err != nil {
 		return err
@@ -615,7 +621,13 @@ func (c *OFSwitch) AddDeviceAppARPFlow(deviceLink DeviceLink, appLink DeviceLink
 	arpType = ofp13.NewOxmArpOp(2)
 	match.Append(arpType)
 
-	arpDst, err = ofp13.NewOxmArpSpa(appLink.GetIPAddress().IP.String())
+	arpSrc, err = ofp13.NewOxmArpSpa(appLink.GetIPAddress().IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(arpSrc)
+
+	arpDst, err = ofp13.NewOxmArpTpa(deviceLink.GetIPAddress().IP.String())
 	if err != nil {
 		return err
 	}
