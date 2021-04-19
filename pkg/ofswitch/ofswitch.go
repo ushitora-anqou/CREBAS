@@ -1382,13 +1382,13 @@ func (c *OFSwitch) addBroadcastDeviceARPFlow(linkA DeviceLink, linkB DeviceLink,
 	return nil
 }
 
-func (c *OFSwitch) AddPortPassthroughFlow(linkA DeviceLink, linkB DeviceLink) error {
-	err := c.addPortPassthroughFlow(linkA, linkB)
+func (c *OFSwitch) AddEAPoLFlow(linkA DeviceLink, linkB DeviceLink) error {
+	err := c.addEAPoLFlow(linkA, linkB)
 	if err != nil {
 		return err
 	}
 
-	err = c.addPortPassthroughFlow(linkB, linkA)
+	err = c.addEAPoLFlow(linkB, linkA)
 	if err != nil {
 		return err
 	}
@@ -1396,15 +1396,17 @@ func (c *OFSwitch) AddPortPassthroughFlow(linkA DeviceLink, linkB DeviceLink) er
 	return nil
 }
 
-func (c *OFSwitch) AddHostPortPassthroughFlow(link DeviceLink) error {
-	return c.addPortPassthroughFlow(link, c.Link)
+func (c *OFSwitch) AddHostEAPoLFlow(link DeviceLink) error {
+	return c.addEAPoLFlow(link, c.Link)
 }
 
-func (c *OFSwitch) addPortPassthroughFlow(linkA DeviceLink, linkB DeviceLink) error {
+func (c *OFSwitch) addEAPoLFlow(linkA DeviceLink, linkB DeviceLink) error {
 	match := ofp13.NewOfpMatch()
 
 	inport := ofp13.NewOxmInPort(linkA.GetOfPort())
 	match.Append(inport)
+	ethType := ofp13.NewOxmEthType(0x888E)
+	match.Append(ethType)
 
 	instruction := ofp13.NewOfpInstructionActions(ofp13.OFPIT_APPLY_ACTIONS)
 	instruction.Append(ofp13.NewOfpActionOutput(linkA.GetOfPort(), OFPCML_NO_BUFFER))

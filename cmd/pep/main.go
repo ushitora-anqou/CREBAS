@@ -189,8 +189,9 @@ func setupWiFi() error {
 	if err != nil {
 		return err
 	}
+	log.Printf("Reset Controller")
 	waitOFSwitchConnectedToController(extOfs)
-	err = extOfs.AddHostPortPassthroughFlow(linkExt)
+	err = extOfs.AddHostEAPoLFlow(linkExt)
 	if err != nil {
 		return err
 	}
