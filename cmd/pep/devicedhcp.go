@@ -13,7 +13,6 @@ import (
 	"github.com/coredhcp/coredhcp/logger"
 	"github.com/coredhcp/coredhcp/server"
 	"github.com/insomniacslk/dhcp/dhcpv4"
-	"github.com/insomniacslk/dhcp/dhcpv6"
 	"github.com/naoki9911/CREBAS/pkg/app"
 	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 	"github.com/vishvananda/netlink"
@@ -120,39 +119,28 @@ func StartDHCPServer() {
 	time.Sleep(time.Second)
 }
 
-// Plugin wraps plugin registration information
 var Plugin = plugins.Plugin{
 	Name:   "externaldhcp",
-	Setup6: setup6,
+	Setup6: nil,
 	Setup4: setup4,
 }
 
-// Handler6 TODO: Implement IPv6
-func handler6(req, resp dhcpv6.DHCPv6) (dhcpv6.DHCPv6, bool) {
-	return resp, false
-}
-
-// Handler4 handles DHCPv4 packets for the fcvm plugin.
 func handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) {
 	fmt.Println("HANDLE")
 	log := logger.GetLogger("dhcpserver")
-	routerIP := pepConfig.extOfsAddr
-	ovsIP, ovsSubnet, err := net.ParseCIDR(routerIP)
+	ovsIP, ovsSubnet, err := net.ParseCIDR(pepConfig.extOfsAddr)
 	if err != nil {
-		log.Errorf("Failed to parse : %v", routerIP)
+		log.Errorf("Failed to parse : %v", pepConfig.extOfsAddr)
 		return resp, true
 	}
 
-	// Update DefaultRoute, SubnetMask
 	resp.Options.Update(dhcpv4.OptRouter([]net.IP{ovsIP}...))
 	resp.Options.Update(dhcpv4.OptSubnetMask(ovsSubnet.Mask))
 
-	// Update ServerIdentifier
 	resp.ServerIPAddr = make(net.IP, net.IPv4len)
 	copy(resp.ServerIPAddr[:], ovsIP)
 	resp.UpdateOption(dhcpv4.OptServerIdentifier(ovsIP))
 
-	// Update DNS information
 	aclIP, _, err := net.ParseCIDR(pepConfig.aclOfsAddr)
 	if err != nil {
 		log.Errorf("Failed to parse : %v", pepConfig.aclOfsAddr)
@@ -206,10 +194,6 @@ func handler4(req, resp *dhcpv4.DHCPv4) (*dhcpv4.DHCPv4, bool) {
 
 func setup4(args ...string) (handler.Handler4, error) {
 	return handler4, nil
-}
-
-func setup6(args ...string) (handler.Handler6, error) {
-	return handler6, nil
 }
 
 func startAppWithDevice(device *app.Device) error {
