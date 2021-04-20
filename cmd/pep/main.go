@@ -74,8 +74,6 @@ func prepareNetwork() error {
 		return err
 	}
 
-	appendOFSwitchToController(aclOfs)
-
 	addr, err := netlink.ParseAddr(pepConfig.aclOfsAddr)
 	if err != nil {
 		return err
@@ -89,13 +87,6 @@ func prepareNetwork() error {
 	if err != nil {
 		return err
 	}
-
-	err = aclOfs.SetController("tcp:127.0.0.1:6653")
-	if err != nil {
-		return err
-	}
-
-	waitOFSwitchConnectedToController(aclOfs)
 
 	extOfs = ofswitch.NewOFSwitch(pepConfig.extOfsName)
 	extOfs.Delete()

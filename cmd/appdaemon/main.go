@@ -19,6 +19,7 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/uuid"
 	"github.com/naoki9911/CREBAS/pkg/app"
+	"github.com/naoki9911/CREBAS/pkg/capability"
 	"github.com/naoki9911/CREBAS/pkg/pkg"
 	"github.com/vishvananda/netlink"
 )
@@ -30,6 +31,11 @@ func main() {
 	args := flag.Args()
 	if len(args) > 1 && args[0] == "testMode" {
 		testMode(args[1])
+	}
+
+	pkgInfo, err := pkg.OpenPackageInfo(args[0])
+	if err != nil {
+		panic(err)
 	}
 
 	output, _ := exec.Command("/bin/ip", "a", "s").Output()
@@ -50,14 +56,11 @@ func main() {
 				fmt.Println(err)
 			} else {
 				fmt.Println(appInfo)
-				configureNetwork()
 			}
-		}
-	}
 
-	pkgInfo, err := pkg.OpenPackageInfo(args[0])
-	if err != nil {
-		panic(err)
+			cpUrl := "http://" + defaultRoute.String() + ":8081"
+			capability.SendContentsToCP(cpUrl+"/cap", pkgInfo.Capabilities)
+		}
 	}
 
 	if !pkgInfo.TestUse {
@@ -259,8 +262,15 @@ func startLoopback() {
 		link := links[idx]
 		switch link.(type) {
 		case *netlink.Veth:
-			ifName = links[idx].Attrs().Name
-			ifLink = links[idx].(*netlink.Veth)
+			addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
+			if err != nil {
+				panic(err)
+			}
+
+			if len(addrs) == 0 {
+				ifName = links[idx].Attrs().Name
+				ifLink = links[idx].(*netlink.Veth)
+			}
 		default:
 			fmt.Println("UNKNOWN")
 		}

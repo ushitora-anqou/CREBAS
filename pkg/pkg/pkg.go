@@ -9,12 +9,15 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
+	"github.com/naoki9911/CREBAS/pkg/capability"
 )
 
 type PackageInfo struct {
-	PkgPath         string
-	UnpackedPkgPath string
-	MetaInfo        PackageMetaInfo
+	PkgPath            string
+	UnpackedPkgPath    string
+	MetaInfo           PackageMetaInfo
+	Capabilities       capability.CapabilitySlice
+	CapabilityRequests capability.CapabilityRequestSlice
 
 	TestUse bool
 }
@@ -99,7 +102,9 @@ func CreateSkeltonPackage(pkgPath string) *PackageInfo {
 			VendorID: vendorID,
 			CMD:      []string{"ping", "127.0.0.1"},
 		},
-		TestUse: false,
+		TestUse:            false,
+		Capabilities:       []*capability.Capability{},
+		CapabilityRequests: []*capability.CapabilityRequest{},
 	}
 
 	pkgInfoJson, _ := json.Marshal(pkgInfo)
@@ -133,7 +138,9 @@ func CreateSkeltonPackageInfo() *PackageInfo {
 			VendorID: vendorID,
 			CMD:      []string{"ping", "127.0.0.1"},
 		},
-		TestUse: false,
+		TestUse:            false,
+		Capabilities:       []*capability.Capability{},
+		CapabilityRequests: []*capability.CapabilityRequest{},
 	}
 
 	return &pkgInfo

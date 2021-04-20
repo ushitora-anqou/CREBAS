@@ -1,6 +1,10 @@
 package capability
 
 import (
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
@@ -185,4 +189,24 @@ func GetAutoGrantedCap(caps *CapabilityCollection, cpID uuid.UUID, capReq *Capab
 	}
 
 	return grantedCaps
+}
+
+func SendContentsToCP(url string, content interface{}) ([]byte, error) {
+	capsJson, err := json.Marshal(content)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := http.Post(url, "application/json", bytes.NewBuffer(capsJson))
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, nil
 }

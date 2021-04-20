@@ -203,6 +203,19 @@ func startAppWithDevice(device *app.Device) error {
 		return err
 	}
 
+	aclAddr, err := appAddrPool.Lease()
+	if err != nil {
+		return err
+	}
+	_, err = proc.AddLinkWithAddr(aclOfs, netlinkext.ACLOFSwitch, aclAddr)
+	if err != nil {
+		return err
+	}
+	err = proc.SetDefaultRoute(aclOfs.Link.Addr.IP)
+	if err != nil {
+		return err
+	}
+
 	if device.GetViaWlan() {
 		procLink, err := proc.AddLink(extOfs, netlinkext.ExternalOFSwitch)
 		if err != nil {
