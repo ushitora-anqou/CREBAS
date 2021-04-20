@@ -247,6 +247,7 @@ func startAppWithDevice(device *app.Device) error {
 		}
 	}
 
+	apps.Add(device.App)
 	err = device.App.Start()
 	if err != nil {
 		return err

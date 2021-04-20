@@ -149,6 +149,9 @@ func prepareTestPkg() error {
 
 	pkg1 := pkg.CreateSkeltonPackageInfo()
 	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "while true; do sleep 1; done"}
+	capReqND := capability.NewCreateSkeltonCapabilityRequest()
+	capReqND.RequestCapabilityName = capability.CAPABILITY_NAME_NEIGHBOR_DISCOVERY
+	pkg1.CapabilityRequests = append(pkg1.CapabilityRequests, capReqND)
 	proc1, err := app.NewLinuxProcessFromPkgInfo(pkg1)
 	if err != nil {
 		return err
@@ -181,6 +184,7 @@ func prepareTestPkg() error {
 	capND := capability.NewCreateSkeltonCapability()
 	capND.CapabilityName = capability.CAPABILITY_NAME_NEIGHBOR_DISCOVERY
 	capND.CapabilityValue = "8000/udp"
+	capND.GrantCondition = "always"
 	capTemp := capability.NewCreateSkeltonCapability()
 	capTemp.CapabilityName = capability.CAPABILITY_NAME_TEMPERATURE
 	capTemp.CapabilityValue = "8000/udp"

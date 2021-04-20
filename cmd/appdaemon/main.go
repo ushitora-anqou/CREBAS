@@ -59,7 +59,26 @@ func main() {
 			}
 
 			cpUrl := "http://" + defaultRoute.String() + ":8081"
-			capability.SendContentsToCP(cpUrl+"/cap", pkgInfo.Capabilities)
+			_, err = capability.SendContentsToCP(cpUrl+"/cap", pkgInfo.Capabilities)
+			if err != nil {
+				panic(err)
+			}
+			for idx := range pkgInfo.CapabilityRequests {
+				capsByte, err := capability.SendContentsToCP(cpUrl+"/capReq", pkgInfo.CapabilityRequests[idx])
+				if err != nil {
+					panic(err)
+				}
+				var caps capability.CapabilitySlice
+				err = json.Unmarshal(capsByte, &caps)
+				if err != nil {
+					panic(err)
+				}
+
+				for _, grantedCap := range caps {
+					fmt.Println(grantedCap)
+				}
+			}
+
 		}
 	}
 

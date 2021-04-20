@@ -133,8 +133,8 @@ func (cap *Capability) GetGrantedCap(cpID uuid.UUID, capReq *CapabilityRequest) 
 		AssignerID:            cpID,
 		AssigneeID:            capReq.RequesterID,
 		AppID:                 cap.AppID,
-		CapabilityName:        capReq.RequestCapabilityName,
-		CapabilityValue:       capReq.RequestCapabilityValue,
+		CapabilityName:        cap.CapabilityName,
+		CapabilityValue:       cap.CapabilityValue,
 		AuthorizeCapabilityID: cap.CapabilityID,
 		CapabilitySignature: CapabilitySignature{
 			SignerID:  cpID,
