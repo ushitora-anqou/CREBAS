@@ -12,6 +12,7 @@ require (
 	github.com/go-playground/validator/v10 v10.4.2 // indirect
 	github.com/golang-collections/go-datastructures v0.0.0-20150211160725-59788d5eb259
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/gopacket v1.1.19
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/insomniacslk/dhcp v0.0.0-20210315110227-c51060810aaa

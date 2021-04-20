@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
 	"github.com/google/uuid"
 	"github.com/naoki9911/CREBAS/pkg/app"
 	"github.com/naoki9911/CREBAS/pkg/pkg"
@@ -56,6 +58,10 @@ func main() {
 	pkgInfo, err := pkg.OpenPackageInfo(args[0])
 	if err != nil {
 		panic(err)
+	}
+
+	if !pkgInfo.TestUse {
+		go startLoopback()
 	}
 
 	fmt.Println("Starting appdaemon...")
@@ -240,4 +246,61 @@ func getDefaultRouteLinkIndex() (int, error) {
 	}
 
 	return 0, fmt.Errorf("default route not found")
+}
+
+func startLoopback() {
+	links, err := netlink.LinkList()
+	if err != nil {
+		panic(err)
+	}
+	ifName := ""
+	var ifLink *netlink.Veth
+	for idx := range links {
+		link := links[idx]
+		switch link.(type) {
+		case *netlink.Veth:
+			ifName = links[idx].Attrs().Name
+			ifLink = links[idx].(*netlink.Veth)
+		default:
+			fmt.Println("UNKNOWN")
+		}
+	}
+	if ifName == "" {
+		panic(fmt.Errorf("link not found"))
+	}
+	fd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
+	if err != nil {
+		syscall.Close(fd)
+		panic(err)
+	}
+	defer syscall.Close(fd)
+	err = syscall.BindToDevice(fd, ifName)
+	if err != nil {
+		syscall.Close(fd)
+		panic(err)
+	}
+	data := make([]byte, 1024)
+	for {
+		n, addr, err := syscall.Recvfrom(fd, data, 0)
+		if err != nil {
+			fmt.Printf("err: %v\n", err)
+			continue
+		}
+		packet := gopacket.NewPacket(data[0:n], layers.LayerTypeEthernet, gopacket.Default)
+		ethernetLayer := packet.Layer(layers.LayerTypeEthernet)
+		ethernetPacket, _ := ethernetLayer.(*layers.Ethernet)
+		if ethernetPacket.DstMAC.String() == ifLink.HardwareAddr.String() || ethernetPacket.SrcMAC.String() == ifLink.HardwareAddr.String() {
+			continue
+		}
+		//fmt.Println("IF NAME: ", ifLink.Name)
+		//fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
+		//fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)
+		err = syscall.Sendto(fd, data[0:n], 0, addr)
+		if err != nil {
+			fmt.Printf("err: %v\n", err)
+			continue
+		}
+
+		//fmt.Println(data)
+	}
 }

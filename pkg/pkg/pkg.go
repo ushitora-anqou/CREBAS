@@ -15,6 +15,8 @@ type PackageInfo struct {
 	PkgPath         string
 	UnpackedPkgPath string
 	MetaInfo        PackageMetaInfo
+
+	TestUse bool
 }
 
 type PackageMetaInfo struct {
@@ -97,6 +99,7 @@ func CreateSkeltonPackage(pkgPath string) *PackageInfo {
 			VendorID: vendorID,
 			CMD:      []string{"ping", "127.0.0.1"},
 		},
+		TestUse: false,
 	}
 
 	pkgInfoJson, _ := json.Marshal(pkgInfo)
@@ -130,6 +133,7 @@ func CreateSkeltonPackageInfo() *PackageInfo {
 			VendorID: vendorID,
 			CMD:      []string{"ping", "127.0.0.1"},
 		},
+		TestUse: false,
 	}
 
 	return &pkgInfo
