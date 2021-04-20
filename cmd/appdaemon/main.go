@@ -59,6 +59,13 @@ func main() {
 			}
 
 			cpUrl := "http://" + defaultRoute.String() + ":8081"
+			for idx := range pkgInfo.Capabilities {
+				pkgInfo.Capabilities[idx].AppID = appID
+				pkgInfo.Capabilities[idx].AssignerID = appID
+			}
+			for idx := range pkgInfo.CapabilityRequests {
+				pkgInfo.CapabilityRequests[idx].RequesterID = appID
+			}
 			_, err = capability.SendContentsToCP(cpUrl+"/cap", pkgInfo.Capabilities)
 			if err != nil {
 				panic(err)
