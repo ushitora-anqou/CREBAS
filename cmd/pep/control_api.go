@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/naoki9911/CREBAS/pkg/app"
+	"github.com/naoki9911/CREBAS/pkg/capability"
 	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 	"github.com/naoki9911/CREBAS/pkg/pkg"
 	"github.com/vishvananda/netlink"
@@ -130,6 +131,19 @@ func stopApp(c *gin.Context) {
 	c.JSON(http.StatusOK, app.ID())
 }
 
+func getAppFromID(appID uuid.UUID) app.AppInterface {
+	selectedApp := apps.Where(func(a app.AppInterface) bool {
+		return a.ID() == appID
+	})
+
+	if len(selectedApp) != 1 {
+		log.Printf("error: invalid app ID %v", appID)
+		return nil
+	}
+
+	return selectedApp[0]
+}
+
 func getAppInfo(c *gin.Context) {
 	id := c.Param("id")
 	appID, err := uuid.Parse(id)
@@ -139,17 +153,11 @@ func getAppInfo(c *gin.Context) {
 		return
 	}
 
-	selectedApp := apps.Where(func(a app.AppInterface) bool {
-		return a.ID() == appID
-	})
-
-	if len(selectedApp) != 1 {
-		log.Printf("error: invalid app ID %v", appID)
+	app := getAppFromID(appID)
+	if app == nil {
 		c.JSON(http.StatusNotFound, nil)
 		return
 	}
-
-	app := selectedApp[0]
 	c.JSON(http.StatusOK, app.GetAppInfo())
 }
 
@@ -162,18 +170,13 @@ func setDevice(c *gin.Context) {
 		return
 	}
 
-	selectedApp := apps.Where(func(a app.AppInterface) bool {
-		return a.ID() == appID
-	})
-
-	if len(selectedApp) != 1 {
-		log.Printf("error: invalid app ID %v", appID)
+	var req app.Device
+	app := getAppFromID(appID)
+	if app == nil {
 		c.JSON(http.StatusNotFound, nil)
 		return
 	}
-
-	var req app.Device
-	app := selectedApp[0]
+	c.JSON(http.StatusOK, app.GetAppInfo())
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -192,19 +195,50 @@ func getDevice(c *gin.Context) {
 		return
 	}
 
-	selectedApp := apps.Where(func(a app.AppInterface) bool {
-		return a.ID() == appID
-	})
-
-	if len(selectedApp) != 1 {
-		log.Printf("error: invalid app ID %v", appID)
+	app := getAppFromID(appID)
+	if app == nil {
 		c.JSON(http.StatusNotFound, nil)
 		return
 	}
 
-	app := selectedApp[0]
-
 	c.JSON(http.StatusOK, app.GetDevice())
+}
+
+func postAppCap(c *gin.Context) {
+	id := c.Param("id")
+	appID, err := uuid.Parse(id)
+	if err != nil {
+		log.Printf("error: invalid id %v", id)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+	var req capability.Capability
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	app := getAppFromID(appID)
+	if app == nil {
+		c.JSON(http.StatusNotFound, nil)
+		return
+	}
+
+	exist := app.Capabilities().Where(func(cap *capability.Capability) bool {
+		return cap.CapabilityID == req.CapabilityID
+	})
+
+	if len(exist) == 0 {
+		app.Capabilities().Add(&req)
+	}
+
+	err = enforceCapability(&req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, nil)
 }
 
 func StartAPIServer() error {
@@ -224,6 +258,13 @@ func setupRouter() *gin.Engine {
 	r.POST("/app/:id/stop", stopApp)
 	r.POST("/app/:id/device", setDevice)
 	r.GET("/app/:id/device", getDevice)
+	r.POST("/app/:id/cap", postAppCap)
 
 	return r
+}
+
+func enforceCapability(cap *capability.Capability) error {
+	log.Printf("info: Enforcing cap %v", cap)
+
+	return nil
 }

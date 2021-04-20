@@ -50,8 +50,8 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 		} else {
-			url := "http://" + defaultRoute.String() + ":8080"
-			appInfo, err := getAppInfo(appID, url)
+			pepUrl := "http://" + defaultRoute.String() + ":8080"
+			appInfo, err := getAppInfo(appID, pepUrl)
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -76,7 +76,7 @@ func main() {
 				}
 
 				for _, grantedCap := range grantedCap.GrantedCapabilities {
-					fmt.Println(grantedCap)
+					capability.SendContentsToCP(pepUrl+"/app/"+appID.String()+"/cap", grantedCap)
 				}
 			}
 
