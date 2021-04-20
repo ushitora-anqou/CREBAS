@@ -68,6 +68,7 @@ func main() {
 				if err != nil {
 					panic(err)
 				}
+				fmt.Println(string(capsByte))
 				var caps capability.CapabilitySlice
 				err = json.Unmarshal(capsByte, &caps)
 				if err != nil {
