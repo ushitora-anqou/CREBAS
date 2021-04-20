@@ -24,7 +24,9 @@ func setupRouter() *gin.Engine {
 		})
 	})
 	r.POST("/cap", postCapability)
+	r.GET("/cap", getCapability)
 	r.POST("/capReq", postCapabilityRequest)
+	r.GET("/capReq", getCapabilityRequest)
 
 	return r
 }
@@ -41,6 +43,10 @@ func postCapability(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, req)
+}
+
+func getCapability(c *gin.Context) {
+	c.JSON(http.StatusOK, caps.GetAll())
 }
 
 type CapReqResponse struct {
@@ -67,4 +73,8 @@ func postCapabilityRequest(c *gin.Context) {
 	for idx := range grantCaps {
 		grantedCaps.Add(grantCaps[idx])
 	}
+}
+
+func getCapabilityRequest(c *gin.Context) {
+	c.JSON(http.StatusOK, grantedCaps.GetAll())
 }
