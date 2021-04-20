@@ -430,7 +430,7 @@ func TestDHCPCommunication(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed test %v", err)
 	}
-	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "dhclient " + peerName + "&& ping -c 1000 192.168.20.1"}
+	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "dhclient " + peerName + "&& ping -c 1 192.168.20.1"}
 	pkg1.TestUse = true
 	err = pkg.CreateUnpackedPackage(pkg1, pkgDir)
 	if err != nil {
@@ -463,7 +463,7 @@ func TestDHCPCommunication(t *testing.T) {
 	devices.Add(&device)
 	//apps.Add(proc1)
 	proc1.Start()
-	time.Sleep(1000 * time.Second)
+	time.Sleep(10 * time.Second)
 	assert.Equal(t, proc1.IsRunning(), false)
 	assert.Equal(t, proc1.GetExitCode(), 0)
 
