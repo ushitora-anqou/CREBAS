@@ -61,6 +61,9 @@ type UserGrantPolicy struct {
 
 const (
 	CAPABILITY_NAME_EXTERNAL_COMMUNICATION = "ExternalCommunication"
+	CAPABILITY_NAME_TEMPERATURE            = "Temperature"
+	CAPABILITY_NAME_HUMIDITY               = "Humidity"
+	CAPABILITY_NAME_NEIGHBOR_DISCOVERY     = "NeighborDiscovery"
 )
 
 func NewCreateSkeltonCapability() *Capability {

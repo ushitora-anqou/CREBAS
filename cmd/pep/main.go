@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/naoki9911/CREBAS/pkg/app"
+	"github.com/naoki9911/CREBAS/pkg/capability"
 	"github.com/naoki9911/CREBAS/pkg/netlinkext"
 	"github.com/naoki9911/CREBAS/pkg/ofswitch"
 	"github.com/naoki9911/CREBAS/pkg/pkg"
@@ -177,6 +178,20 @@ func prepareTestPkg() error {
 
 	pkg2 := pkg.CreateSkeltonPackageInfo()
 	pkg2.MetaInfo.CMD = []string{"/bin/bash", "-c", "while true; do sleep 1; done"}
+	capND := capability.NewCreateSkeltonCapability()
+	capND.CapabilityName = capability.CAPABILITY_NAME_NEIGHBOR_DISCOVERY
+	capND.CapabilityValue = "8000/udp"
+	capTemp := capability.NewCreateSkeltonCapability()
+	capTemp.CapabilityName = capability.CAPABILITY_NAME_TEMPERATURE
+	capTemp.CapabilityValue = "8000/udp"
+	capHumid := capability.NewCreateSkeltonCapability()
+	capHumid.CapabilityName = capability.CAPABILITY_NAME_HUMIDITY
+	capHumid.CapabilityValue = "8000/udp"
+
+	pkg2.Capabilities = append(pkg2.Capabilities, capND)
+	pkg2.Capabilities = append(pkg2.Capabilities, capTemp)
+	pkg2.Capabilities = append(pkg2.Capabilities, capHumid)
+
 	proc2, err := app.NewLinuxProcessFromPkgInfo(pkg2)
 	if err != nil {
 		return err
