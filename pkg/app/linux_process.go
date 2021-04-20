@@ -35,6 +35,7 @@ type LinuxProcess struct {
 	capabilities *capability.CapabilityCollection
 
 	DhcpConfigPath string
+	ACLLink        *netlinkext.LinkExt
 }
 
 // NewLinuxProcess creates linux process application

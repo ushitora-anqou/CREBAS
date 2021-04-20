@@ -273,6 +273,7 @@ func enforceCapability(cap *capability.Capability) error {
 		return fmt.Errorf("error: clientApp %v not found", cap.AssigneeID)
 	}
 	log.Printf("info: clientApp %v found", cap.AssigneeID)
+	clientProc := clientApp.(*app.LinuxProcess)
 
 	serverApp := getAppFromID(cap.AppID)
 	if serverApp == nil {
@@ -280,5 +281,17 @@ func enforceCapability(cap *capability.Capability) error {
 		return fmt.Errorf("error: serverApp %v not found", cap.AppID)
 	}
 	log.Printf("info: serverApp %v found", cap.AppID)
+	serverProc := serverApp.(*app.LinuxProcess)
+
+	err := extOfs.AddAppsARPFlow(serverProc.GetDevice(), serverProc.ACLLink, clientProc.GetDevice(), clientProc.ACLLink)
+	if err != nil {
+		return err
+	}
+	err = extOfs.AddAppsICMPFlow(serverProc.GetDevice(), serverProc.ACLLink, clientProc.GetDevice(), clientProc.ACLLink)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("info: Successfully enforced cap")
 	return nil
 }
