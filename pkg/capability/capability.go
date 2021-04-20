@@ -59,6 +59,11 @@ type UserGrantPolicy struct {
 	AllowedUsersID []uuid.UUID `json:"allowedUsersID"`
 }
 
+type CapReqResponse struct {
+	Request             CapabilityRequest `json:"request"`
+	GrantedCapabilities CapabilitySlice   `json:"grantedCapabilities"`
+}
+
 const (
 	CAPABILITY_NAME_EXTERNAL_COMMUNICATION = "ExternalCommunication"
 	CAPABILITY_NAME_TEMPERATURE            = "Temperature"

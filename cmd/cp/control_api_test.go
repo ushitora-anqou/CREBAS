@@ -70,7 +70,7 @@ func TestPostCapabilityReqest(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusOK)
 	resp := w.Result()
 	resbody, _ := ioutil.ReadAll(resp.Body)
-	capReqRes := CapReqResponse{}
+	capReqRes := capability.CapReqResponse{}
 	json.Unmarshal(resbody, &capReqRes)
 
 	assert.Equal(t, capReq.RequestID, capReqRes.Request.RequestID)
@@ -115,7 +115,7 @@ func TestAutoGrant(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusOK)
 	resp := w.Result()
 	resbody, _ := ioutil.ReadAll(resp.Body)
-	capReqRes := CapReqResponse{}
+	capReqRes := capability.CapReqResponse{}
 	json.Unmarshal(resbody, &capReqRes)
 
 	assert.Equal(t, capReq.RequestID, capReqRes.Request.RequestID)

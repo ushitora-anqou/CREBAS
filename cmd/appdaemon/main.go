@@ -69,13 +69,13 @@ func main() {
 					panic(err)
 				}
 				fmt.Println(string(capsByte))
-				var caps capability.CapabilitySlice
-				err = json.Unmarshal(capsByte, &caps)
+				var grantedCap capability.CapReqResponse
+				err = json.Unmarshal(capsByte, &grantedCap)
 				if err != nil {
 					panic(err)
 				}
 
-				for _, grantedCap := range caps {
+				for _, grantedCap := range grantedCap.GrantedCapabilities {
 					fmt.Println(grantedCap)
 				}
 			}

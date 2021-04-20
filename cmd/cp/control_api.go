@@ -49,11 +49,6 @@ func getCapability(c *gin.Context) {
 	c.JSON(http.StatusOK, caps.GetAll())
 }
 
-type CapReqResponse struct {
-	Request             capability.CapabilityRequest `json:"request"`
-	GrantedCapabilities capability.CapabilitySlice   `json:"grantedCapabilities"`
-}
-
 func postCapabilityRequest(c *gin.Context) {
 	var req capability.CapabilityRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -63,7 +58,7 @@ func postCapabilityRequest(c *gin.Context) {
 
 	grantCaps := capability.GetAutoGrantedCap(caps, config.cpID, &req)
 
-	res := CapReqResponse{
+	res := capability.CapReqResponse{
 		Request:             req,
 		GrantedCapabilities: grantCaps,
 	}
