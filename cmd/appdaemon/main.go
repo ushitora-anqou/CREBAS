@@ -326,9 +326,15 @@ func startLoopback() {
 		packet := gopacket.NewPacket(data[0:n], layers.LayerTypeEthernet, gopacket.Default)
 		ethernetLayer := packet.Layer(layers.LayerTypeEthernet)
 		ethernetPacket, _ := ethernetLayer.(*layers.Ethernet)
+		wifiMACStr := "f4:8c:50:30:da:4a"
+		wifiMAC, _ := net.ParseMAC(wifiMACStr)
 		if ethernetPacket.DstMAC.String() == ifLink.HardwareAddr.String() || ethernetPacket.SrcMAC.String() == ifLink.HardwareAddr.String() {
 			continue
 		}
+		if ethernetPacket.DstMAC.String() == wifiMAC.String() || ethernetPacket.SrcMAC.String() == wifiMAC.String() {
+			continue
+		}
+		//fmt.Println("IF NAME: ", ifLink.Name)
 		//fmt.Println("IF NAME: ", ifLink.Name)
 		//fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
 		//fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)

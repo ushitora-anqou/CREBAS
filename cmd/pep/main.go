@@ -229,7 +229,8 @@ func prepareTestPkg() error {
 }
 
 func setupWiFi() error {
-	link, err := netlink.LinkByName("wlan0")
+	wifiLinkName := "wlp4s0"
+	link, err := netlink.LinkByName(wifiLinkName)
 	if err != nil {
 		return err
 	}
@@ -237,13 +238,13 @@ func setupWiFi() error {
 	linkExt.SetLink(link)
 
 	for {
-		ofport, err := ofswitch.GetOFPortByLinkName("wlan0")
+		ofport, err := ofswitch.GetOFPortByLinkName(wifiLinkName)
 		if err == nil {
-			log.Printf("Found OfPort wlan0 %v", ofport)
+			log.Printf("Found OfPort %v %v",wifiLinkName, ofport)
 			linkExt.Ofport = ofport
 			break
 		}
-		log.Printf("Not Found OfPort for wlan0")
+		log.Printf("Not Found OfPort for %v", wifiLinkName)
 		time.Sleep(1 * time.Second)
 	}
 	err = extOfs.ResetController()
