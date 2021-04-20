@@ -575,17 +575,8 @@ func (c *OFSwitch) AddDeviceAppARPFlow(deviceLink DeviceLink, appLink DeviceLink
 	inport := ofp13.NewOxmInPort(deviceLink.GetOfPort())
 	match.Append(inport)
 
-	ethsrc, err := ofp13.NewOxmEthSrc(deviceLink.GetHWAddress().String())
-	if err != nil {
-		return err
-	}
-	match.Append(ethsrc)
-
 	ethType := ofp13.NewOxmEthType(0x0806)
 	match.Append(ethType)
-
-	arpType := ofp13.NewOxmArpOp(1)
-	match.Append(arpType)
 
 	arpSrc, err := ofp13.NewOxmArpSpa(deviceLink.GetIPAddress().IP.String())
 	if err != nil {
@@ -599,7 +590,7 @@ func (c *OFSwitch) AddDeviceAppARPFlow(deviceLink DeviceLink, appLink DeviceLink
 	}
 	match.Append(arpDst)
 
-	err = c.SendFlowModAddOutput(match, appLink.GetOfPort(), 100)
+	err = c.SendFlowModAddOutput(match, appLink.GetOfPort(), 200)
 	if err != nil {
 		return err
 	}
@@ -609,17 +600,8 @@ func (c *OFSwitch) AddDeviceAppARPFlow(deviceLink DeviceLink, appLink DeviceLink
 	inport = ofp13.NewOxmInPort(appLink.GetOfPort())
 	match.Append(inport)
 
-	ethsrc, err = ofp13.NewOxmEthSrc(appLink.GetHWAddress().String())
-	if err != nil {
-		return err
-	}
-	match.Append(ethsrc)
-
 	ethType = ofp13.NewOxmEthType(0x0806)
 	match.Append(ethType)
-
-	arpType = ofp13.NewOxmArpOp(2)
-	match.Append(arpType)
 
 	arpSrc, err = ofp13.NewOxmArpSpa(appLink.GetIPAddress().IP.String())
 	if err != nil {
@@ -633,7 +615,7 @@ func (c *OFSwitch) AddDeviceAppARPFlow(deviceLink DeviceLink, appLink DeviceLink
 	}
 	match.Append(arpDst)
 
-	err = c.SendFlowModAddOutput(match, deviceLink.GetOfPort(), 100)
+	err = c.SendFlowModAddOutput(match, deviceLink.GetOfPort(), 200)
 	if err != nil {
 		return err
 	}
