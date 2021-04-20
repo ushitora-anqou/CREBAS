@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -266,5 +267,18 @@ func setupRouter() *gin.Engine {
 func enforceCapability(cap *capability.Capability) error {
 	log.Printf("info: Enforcing cap %v", cap)
 
+	clientApp := getAppFromID(cap.AssigneeID)
+	if clientApp == nil {
+		log.Printf("error: clientApp %v not found", cap.AssigneeID)
+		return fmt.Errorf("error: clientApp %v not found", cap.AssigneeID)
+	}
+	log.Printf("info: clientApp %v found", cap.AssigneeID)
+
+	serverApp := getAppFromID(cap.AppID)
+	if serverApp == nil {
+		log.Printf("error: serverApp %v not found", cap.AppID)
+		return fmt.Errorf("error: serverApp %v not found", cap.AppID)
+	}
+	log.Printf("info: serverApp %v found", cap.AppID)
 	return nil
 }
