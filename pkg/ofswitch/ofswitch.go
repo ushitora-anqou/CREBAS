@@ -1418,7 +1418,7 @@ func (c *OFSwitch) addEAPoLFlow(linkA DeviceLink, linkB DeviceLink) error {
 		0,
 		0,
 		0,
-		0,
+		200,
 		0,
 		match,
 		instructions,
