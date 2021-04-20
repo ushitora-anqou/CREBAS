@@ -176,6 +176,7 @@ func prepareTestPkg() error {
 		OfPort:    pepConfig.wifiLink.GetOfPort(),
 		ViaWlan:   true,
 	}
+	proc1.SetDevice(device)
 
 	devices.Add(device)
 
@@ -220,6 +221,7 @@ func prepareTestPkg() error {
 		OfPort:    pepConfig.wifiLink.GetOfPort(),
 		ViaWlan:   true,
 	}
+	proc2.SetDevice(device2)
 
 	devices.Add(device2)
 
