@@ -202,25 +202,21 @@ func startAppWithDevice(device *app.Device) error {
 	if err != nil {
 		return err
 	}
-	procLink, err := proc.AddLinkWithAddr(extOfs, netlinkext.ExternalOFSwitch, procAddr)
-	if err != nil {
-		return err
-	}
 
 	if device.GetViaWlan() {
-		err = extOfs.AddDeviceAppARPFlow(device, procLink)
+		procLink, err := proc.AddLink(extOfs, netlinkext.ExternalOFSwitch)
 		if err != nil {
 			return err
 		}
-		err = extOfs.AddDeviceAppARPFlow(procLink, device)
-		if err != nil {
-			return err
-		}
-		err = extOfs.AddDeviceAppIPFlow(device, procLink)
+		err = extOfs.AddDeviceAppTunnelFlow(device, procLink)
 		if err != nil {
 			return err
 		}
 	} else {
+		procLink, err := proc.AddLinkWithAddr(extOfs, netlinkext.ExternalOFSwitch, procAddr)
+		if err != nil {
+			return err
+		}
 		err = extOfs.AddDeviceTunnelFlow(device, procLink)
 		if err != nil {
 			return err
