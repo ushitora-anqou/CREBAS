@@ -362,9 +362,16 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		if ethernetPacket.DstMAC.String() == appInfo.DeviceLinkPeerHWAddress || ethernetPacket.SrcMAC.String() == appInfo.DeviceLinkPeerHWAddress {
 			continue
 		}
-		//if ethernetPacket.DstMAC.String() != device.HWAddress.String() && ethernetPacket.SrcMAC.String() != device.HWAddress.String() {
-		//	continue
-		//}
+		udpLayer := packet.Layer(layers.LayerTypeUDP)
+		if udpLayer != nil {
+			udpPacket, _ := udpLayer.(*layers.UDP)
+			fmt.Printf("src port %d to dst to %d\n", udpPacket.SrcPort, udpPacket.DstPort)
+			if udpPacket.DstPort == 8000 {
+				applicationLayer := packet.ApplicationLayer()
+				fmt.Printf("%s\n", applicationLayer.Payload())
+			}
+		}
+
 		//fmt.Printf("Recv IF NAME: %v Send IF NAME: %v", recvLinkName, sendLinkName)
 		//fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
 		//fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)
