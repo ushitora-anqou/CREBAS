@@ -17,6 +17,7 @@ type LinkExt struct {
 	OfType       OFType
 	Ofport       uint32
 	DefaultRoute bool
+	PeerHWAddr   string
 }
 
 type OFType int
