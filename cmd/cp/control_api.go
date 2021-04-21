@@ -98,7 +98,7 @@ func postCapabilityRequest(c *gin.Context) {
 }
 
 func getCapabilityRequest(c *gin.Context) {
-	c.JSON(http.StatusOK, grantedCaps.GetAll())
+	c.JSON(http.StatusOK, capReqs.GetAll())
 }
 
 func postCapabilityRequestGrantManually(c *gin.Context) {
