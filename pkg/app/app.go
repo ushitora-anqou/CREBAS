@@ -22,7 +22,9 @@ type AppInterface interface {
 }
 
 type AppInfo struct {
-	Id             uuid.UUID `json:"id"`
-	ACLLinkName    string    `json:"aclLinkName"`
-	DeviceLinkName string    `json:"deviceLinkName"`
+	Id                      uuid.UUID `json:"id"`
+	ACLLinkName             string    `json:"aclLinkName"`
+	ACLLinkPeerHWAddress    string    `json:"aclLinkPeerHWAddress`
+	DeviceLinkName          string    `json:"deviceLinkName"`
+	DeviceLinkPeerHWAddress string    `json:"deviceLinkPeerHWAddress`
 }

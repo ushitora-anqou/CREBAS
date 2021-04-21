@@ -26,6 +26,7 @@ import (
 
 var childCmd *exec.Cmd
 var device *app.Device
+var appInfo *app.AppInfo
 
 func main() {
 	flag.Parse()
@@ -52,7 +53,7 @@ func main() {
 			fmt.Println(err)
 		} else {
 			pepUrl := "http://" + defaultRoute.String() + ":8080"
-			appInfo, err := getAppInfo(appID, pepUrl)
+			appInfo, err = getAppInfo(appID, pepUrl)
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -327,7 +328,6 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		fmt.Println(err)
 		panic(err)
 	}
-	recvLinkVeth := recvLink.(*netlink.Veth)
 
 	sendFd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
 	if err != nil {
@@ -345,10 +345,9 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		fmt.Println(err)
 		panic(err)
 	}
-	sendLinkVeth := sendLink.(*netlink.Veth)
 
 	data := make([]byte, 1600)
-	fmt.Printf("SendVeth: %v RecvVeth:%v\n", sendLinkVeth.PeerHardwareAddr.String(), recvLinkVeth.PeerHardwareAddr.String())
+	fmt.Printf("SendVeth: %v RecvVeth:%v\n", appInfo.ACLLinkPeerHWAddress, appInfo.DeviceLinkPeerHWAddress)
 	for {
 		n, addr, err := syscall.Recvfrom(recvFd, data, 0)
 		if err != nil {
@@ -369,10 +368,10 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		if ethernetPacket.DstMAC.String() == sendLink.Attrs().HardwareAddr.String() || ethernetPacket.SrcMAC.String() == sendLink.Attrs().HardwareAddr.String() {
 			continue
 		}
-		if ethernetPacket.DstMAC.String() == recvLinkVeth.PeerHardwareAddr.String() || ethernetPacket.SrcMAC.String() == recvLinkVeth.PeerHardwareAddr.String() {
+		if ethernetPacket.DstMAC.String() == appInfo.ACLLinkPeerHWAddress || ethernetPacket.SrcMAC.String() == appInfo.ACLLinkPeerHWAddress {
 			continue
 		}
-		if ethernetPacket.DstMAC.String() == sendLinkVeth.PeerHardwareAddr.String() || ethernetPacket.SrcMAC.String() == sendLinkVeth.PeerHardwareAddr.String() {
+		if ethernetPacket.DstMAC.String() == appInfo.DeviceLinkPeerHWAddress || ethernetPacket.SrcMAC.String() == appInfo.DeviceLinkPeerHWAddress {
 			continue
 		}
 		if ethernetPacket.DstMAC.String() != device.HWAddress.String() && ethernetPacket.SrcMAC.String() == device.HWAddress.String() {
