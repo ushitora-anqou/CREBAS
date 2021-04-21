@@ -347,7 +347,7 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 	}
 
 	data := make([]byte, 1600)
-	fmt.Printf("SendVeth: %v RecvVeth:%v\n", appInfo.ACLLinkPeerHWAddress, appInfo.DeviceLinkPeerHWAddress)
+	fmt.Printf("Device: %v SendVeth: %v RecvVeth:%v\n",device.HWAddress, appInfo.ACLLinkPeerHWAddress, appInfo.DeviceLinkPeerHWAddress)
 	for {
 		n, addr, err := syscall.Recvfrom(recvFd, data, 0)
 		if err != nil {
@@ -377,9 +377,9 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		if ethernetPacket.DstMAC.String() != device.HWAddress.String() && ethernetPacket.SrcMAC.String() == device.HWAddress.String() {
 			continue
 		}
-		fmt.Printf("Recv IF NAME: %v Send IF NAME: %v", recvLinkName, sendLinkName)
-		fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
-		fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)
+		//fmt.Printf("Recv IF NAME: %v Send IF NAME: %v", recvLinkName, sendLinkName)
+		//fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
+		//fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)
 		err = syscall.Sendto(sendFd, data[0:n], 0, addr)
 		if err != nil {
 			fmt.Printf("err: %v\n", err)
