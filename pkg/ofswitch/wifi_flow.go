@@ -925,3 +925,208 @@ func (c *OFSwitch) AddAppsICMPFlow(deviceLinkA DeviceLink, appLinkA DeviceLink, 
 
 	return nil
 }
+
+func (c *OFSwitch) AddAppsUnicastUDPDstFlow(deviceLinkA DeviceLink, appLinkA DeviceLink, deviceLinkB DeviceLink, appLinkB DeviceLink, dstPort uint16) error {
+	err := c.addAppsUnicastTransportDstFlow(deviceLinkA, appLinkA, deviceLinkB, appLinkB, 17, dstPort)
+	if err != nil {
+		return err
+	}
+
+	err = c.addAppsUnicastTransportSrcFlow(deviceLinkB, appLinkB, deviceLinkA, appLinkA, 17, dstPort)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) addAppsUnicastTransportDstFlow(deviceLinkA DeviceLink, appLinkA DeviceLink, deviceLinkB DeviceLink, appLinkB DeviceLink, protoType uint16, dstPort uint16) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(appLinkA.GetOfPort())
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(deviceLinkA.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst(deviceLinkB.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType := ofp13.NewOxmEthType(0x800)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	ipSrc, err := ofp13.NewOxmIpv4Src(deviceLinkA.GetIPAddress().IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipSrc)
+
+	ipDst, err := ofp13.NewOxmIpv4Dst(deviceLinkB.GetIPAddress().IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipDst)
+
+	if protoType == 6 {
+		ipProto := ofp13.NewOxmIpProto(6)
+		match.Append(ipProto)
+
+		tcpSrc := ofp13.NewOxmTcpDst(dstPort)
+		match.Append(tcpSrc)
+
+	} else if protoType == 17 {
+		ipProto := ofp13.NewOxmIpProto(17)
+		match.Append(ipProto)
+
+		udpSrc := ofp13.NewOxmUdpDst(dstPort)
+		match.Append(udpSrc)
+	} else {
+		return fmt.Errorf("invalid protocol type:%d", protoType)
+	}
+
+	err = c.SendFlowModAddOutput(match, appLinkB.GetOfPort(), 90)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) addAppsUnicastTransportSrcFlow(deviceLinkA DeviceLink, appLinkA DeviceLink, deviceLinkB DeviceLink, appLinkB DeviceLink, protoType uint16, srcPort uint16) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(appLinkA.GetOfPort())
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(deviceLinkA.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst(deviceLinkB.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType := ofp13.NewOxmEthType(0x800)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	ipSrc, err := ofp13.NewOxmIpv4Src(deviceLinkA.GetIPAddress().IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipSrc)
+
+	ipDst, err := ofp13.NewOxmIpv4Dst(deviceLinkB.GetIPAddress().IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipDst)
+
+	if protoType == 6 {
+		ipProto := ofp13.NewOxmIpProto(6)
+		match.Append(ipProto)
+
+		tcpSrc := ofp13.NewOxmTcpSrc(srcPort)
+		match.Append(tcpSrc)
+
+	} else if protoType == 17 {
+		ipProto := ofp13.NewOxmIpProto(17)
+		match.Append(ipProto)
+
+		udpSrc := ofp13.NewOxmUdpSrc(srcPort)
+		match.Append(udpSrc)
+	} else {
+		return fmt.Errorf("invalid protocol type:%d", protoType)
+	}
+
+	err = c.SendFlowModAddOutput(match, appLinkB.GetOfPort(), 90)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) AddAppsBroadcastUDPDstFlow(deviceLinkA DeviceLink, appLinkA DeviceLink, deviceLinkB DeviceLink, appLinkB DeviceLink, dstPort uint16) error {
+	err := c.addAppsBroadcastTransportDstFlow(deviceLinkA, appLinkA, deviceLinkB, appLinkB, 17, dstPort)
+	if err != nil {
+		return err
+	}
+
+	err = c.addAppsUnicastTransportSrcFlow(deviceLinkB, appLinkB, deviceLinkA, appLinkA, 17, dstPort)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *OFSwitch) addAppsBroadcastTransportDstFlow(deviceLinkA DeviceLink, appLinkA DeviceLink, deviceLinkB DeviceLink, appLinkB DeviceLink, protoType uint16, dstPort uint16) error {
+	match := ofp13.NewOfpMatch()
+
+	inport := ofp13.NewOxmInPort(appLinkA.GetOfPort())
+	match.Append(inport)
+
+	ethsrc, err := ofp13.NewOxmEthSrc(deviceLinkA.GetHWAddress().String())
+	if err != nil {
+		return err
+	}
+	match.Append(ethsrc)
+
+	ethdst, err := ofp13.NewOxmEthDst("FF:FF:FF:FF:FF:FF")
+	if err != nil {
+		return err
+	}
+	match.Append(ethdst)
+
+	ethType := ofp13.NewOxmEthType(0x800)
+	if err != nil {
+		return err
+	}
+	match.Append(ethType)
+
+	ipSrc, err := ofp13.NewOxmIpv4Src(deviceLinkA.GetIPAddress().IP.String())
+	if err != nil {
+		return err
+	}
+	match.Append(ipSrc)
+
+	if protoType == 6 {
+		ipProto := ofp13.NewOxmIpProto(6)
+		match.Append(ipProto)
+
+		tcpSrc := ofp13.NewOxmTcpDst(dstPort)
+		match.Append(tcpSrc)
+
+	} else if protoType == 17 {
+		ipProto := ofp13.NewOxmIpProto(17)
+		match.Append(ipProto)
+
+		udpSrc := ofp13.NewOxmUdpDst(dstPort)
+		match.Append(udpSrc)
+	} else {
+		return fmt.Errorf("invalid protocol type:%d", protoType)
+	}
+
+	err = c.SendFlowModAddOutput(match, appLinkB.GetOfPort(), 90)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

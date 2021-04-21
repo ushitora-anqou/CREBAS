@@ -292,6 +292,11 @@ func enforceCapability(cap *capability.Capability) error {
 		return err
 	}
 
+	err = extOfs.AddAppsBroadcastUDPDstFlow(serverProc.GetDevice(), serverProc.ACLLink, clientProc.GetDevice(), clientProc.ACLLink, 8000)
+	if err != nil {
+		return err
+	}
+
 	log.Printf("info: Successfully enforced cap")
 	return nil
 }
