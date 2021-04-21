@@ -293,7 +293,7 @@ func enforceCapability(cap *capability.Capability) error {
 		return err
 	}
 
-	if cap.CapabilityName == capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION {
+	if cap.CapabilityName == capability.CAPABILITY_NAME_NEIGHBOR_DISCOVERY {
 		err = extOfs.AddAppsBroadcastUDPDstFlow(clientProc.GetDevice(), clientProc.ACLLink, serverProc.GetDevice(), serverProc.ACLLink, 8000)
 		if err != nil {
 			return err
