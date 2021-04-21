@@ -87,11 +87,13 @@ func main() {
 				}
 			}
 
-		}
-	}
+			fmt.Printf("DeviceLinkName:%v ACLLinkName:%v\n", appInfo.DeviceLinkName, appInfo.ACLLinkName)
+			if !pkgInfo.TestUse {
+				go startPassing(appInfo.DeviceLinkName, appInfo.ACLLinkName)
+				go startPassing(appInfo.ACLLinkName, appInfo.DeviceLinkName)
+			}
 
-	if !pkgInfo.TestUse {
-		go startLoopback()
+		}
 	}
 
 	fmt.Println("Starting appdaemon...")
@@ -278,47 +280,38 @@ func getDefaultRouteLinkIndex() (int, error) {
 	return 0, fmt.Errorf("default route not found")
 }
 
-func startLoopback() {
-	links, err := netlink.LinkList()
+func startPassing(recvLinkName string, sendLinkName string) {
+	recvFd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
 	if err != nil {
 		panic(err)
 	}
-	ifName := ""
-	var ifLink *netlink.Veth
-	for idx := range links {
-		link := links[idx]
-		switch link.(type) {
-		case *netlink.Veth:
-			addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
-			if err != nil {
-				panic(err)
-			}
+	defer syscall.Close(recvFd)
+	err = syscall.BindToDevice(recvFd, recvLinkName)
+	if err != nil {
+		panic(err)
+	}
+	recvLink, err := netlink.LinkByName(recvLinkName)
+	if err != nil {
+		panic(err)
+	}
 
-			if len(addrs) == 0 {
-				ifName = links[idx].Attrs().Name
-				ifLink = links[idx].(*netlink.Veth)
-			}
-		default:
-			fmt.Println("UNKNOWN")
-		}
-	}
-	if ifName == "" {
-		panic(fmt.Errorf("link not found"))
-	}
-	fd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
+	sendFd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
 	if err != nil {
-		syscall.Close(fd)
 		panic(err)
 	}
-	defer syscall.Close(fd)
-	err = syscall.BindToDevice(fd, ifName)
+	defer syscall.Close(recvFd)
+	err = syscall.BindToDevice(recvFd, sendLinkName)
 	if err != nil {
-		syscall.Close(fd)
 		panic(err)
 	}
-	data := make([]byte, 1024)
+	sendLink, err := netlink.LinkByName(sendLinkName)
+	if err != nil {
+		panic(err)
+	}
+
+	data := make([]byte, 1600)
 	for {
-		n, addr, err := syscall.Recvfrom(fd, data, 0)
+		n, addr, err := syscall.Recvfrom(recvFd, data, 0)
 		if err != nil {
 			fmt.Printf("err: %v\n", err)
 			continue
@@ -328,7 +321,10 @@ func startLoopback() {
 		ethernetPacket, _ := ethernetLayer.(*layers.Ethernet)
 		wifiMACStr := "f4:8c:50:30:da:4a"
 		wifiMAC, _ := net.ParseMAC(wifiMACStr)
-		if ethernetPacket.DstMAC.String() == ifLink.HardwareAddr.String() || ethernetPacket.SrcMAC.String() == ifLink.HardwareAddr.String() {
+		if ethernetPacket.DstMAC.String() == recvLink.Attrs().HardwareAddr.String() || ethernetPacket.SrcMAC.String() == recvLink.Attrs().HardwareAddr.String() {
+			continue
+		}
+		if ethernetPacket.DstMAC.String() == sendLink.Attrs().HardwareAddr.String() || ethernetPacket.SrcMAC.String() == sendLink.Attrs().HardwareAddr.String() {
 			continue
 		}
 		if ethernetPacket.DstMAC.String() == wifiMAC.String() || ethernetPacket.SrcMAC.String() == wifiMAC.String() {
@@ -338,7 +334,7 @@ func startLoopback() {
 		//fmt.Println("IF NAME: ", ifLink.Name)
 		//fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
 		//fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)
-		err = syscall.Sendto(fd, data[0:n], 0, addr)
+		err = syscall.Sendto(sendFd, data[0:n], 0, addr)
 		if err != nil {
 			fmt.Printf("err: %v\n", err)
 			continue

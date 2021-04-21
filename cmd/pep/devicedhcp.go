@@ -221,7 +221,7 @@ func startAppWithDevice(device *app.Device) error {
 		if err != nil {
 			return err
 		}
-		proc.ACLLink = procLink
+		proc.DeviceLink = procLink
 
 		err = extOfs.AddDeviceAppARPFlow(device, extOfs.Link)
 		if err != nil {
@@ -232,6 +232,12 @@ func startAppWithDevice(device *app.Device) error {
 		if err != nil {
 			return err
 		}
+
+		procLink2, err := proc.AddLink(extOfs, netlinkext.ExternalOFSwitch)
+		if err != nil {
+			return err
+		}
+		proc.ACLLink = procLink2
 	} else {
 		procLink, err := proc.AddLinkWithAddr(extOfs, netlinkext.ExternalOFSwitch, procAddr)
 		if err != nil {

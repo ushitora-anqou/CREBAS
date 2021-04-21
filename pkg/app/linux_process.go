@@ -35,6 +35,7 @@ type LinuxProcess struct {
 	capabilities *capability.CapabilityCollection
 
 	DhcpConfigPath string
+	DeviceLink     *netlinkext.LinkExt
 	ACLLink        *netlinkext.LinkExt
 }
 
@@ -141,7 +142,9 @@ func (p *LinuxProcess) ID() uuid.UUID {
 // GetAppInfo returns appInfo
 func (p *LinuxProcess) GetAppInfo() *AppInfo {
 	appInfo := AppInfo{
-		Id: p.id,
+		Id:             p.id,
+		ACLLinkName:    p.ACLLink.GetLink().Attrs().Name,
+		DeviceLinkName: p.DeviceLink.GetLink().Attrs().Name,
 	}
 
 	return &appInfo
