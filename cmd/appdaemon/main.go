@@ -362,9 +362,9 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		if ethernetPacket.DstMAC.String() == appInfo.DeviceLinkPeerHWAddress || ethernetPacket.SrcMAC.String() == appInfo.DeviceLinkPeerHWAddress {
 			continue
 		}
-		if ethernetPacket.DstMAC.String() != device.HWAddress.String() && ethernetPacket.SrcMAC.String() != device.HWAddress.String() {
-			continue
-		}
+		//if ethernetPacket.DstMAC.String() != device.HWAddress.String() && ethernetPacket.SrcMAC.String() != device.HWAddress.String() {
+		//	continue
+		//}
 		//fmt.Printf("Recv IF NAME: %v Send IF NAME: %v", recvLinkName, sendLinkName)
 		//fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
 		//fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)
