@@ -9,7 +9,7 @@ import (
 type Device struct {
 	HWAddress net.HardwareAddr `json:"hwAddress"`
 	IPAddress *netlink.Addr    `json:"ipAddress"`
-	App       AppInterface
+	App       AppInterface `json:"-"`
 	OfPort    uint32
 	ViaWlan   bool
 }

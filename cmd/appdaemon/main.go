@@ -359,7 +359,7 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		ethernetPacket, _ := ethernetLayer.(*layers.Ethernet)
 		wifiMACStr := "f4:8c:50:30:da:4a"
 		wifiMAC, _ := net.ParseMAC(wifiMACStr)
-		if ethernetPacket.DstMAC.String() == wifiMAC.String() || ethernetPacket.SrcMAC.String() == wifiLink.String() {
+		if ethernetPacket.DstMAC.String() == wifiMAC.String() || ethernetPacket.SrcMAC.String() == wifiMAC.String() {
 			continue
 		}
 		if ethernetPacket.DstMAC.String() == recvLink.Attrs().HardwareAddr.String() || ethernetPacket.SrcMAC.String() == recvLink.Attrs().HardwareAddr.String() {
