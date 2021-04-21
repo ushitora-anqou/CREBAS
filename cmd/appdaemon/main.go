@@ -303,8 +303,8 @@ func startPassing(recvLinkName string, sendLinkName string) {
 		fmt.Println(err)
 		panic(err)
 	}
-	defer syscall.Close(recvFd)
-	err = syscall.BindToDevice(recvFd, sendLinkName)
+	defer syscall.Close(sendFd)
+	err = syscall.BindToDevice(sendFd, sendLinkName)
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
@@ -336,9 +336,9 @@ func startPassing(recvLinkName string, sendLinkName string) {
 		if ethernetPacket.DstMAC.String() == wifiMAC.String() || ethernetPacket.SrcMAC.String() == wifiMAC.String() {
 			continue
 		}
-		fmt.Printf("Recv IF NAME: %v Send IF NAME: %v", recvLinkName, sendLinkName)
-		fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
-		fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)
+		//fmt.Printf("Recv IF NAME: %v Send IF NAME: %v", recvLinkName, sendLinkName)
+		//fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
+		//fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)
 		err = syscall.Sendto(sendFd, data[0:n], 0, addr)
 		if err != nil {
 			fmt.Printf("err: %v\n", err)
