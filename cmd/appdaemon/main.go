@@ -88,7 +88,7 @@ func main() {
 					fmt.Println("Processing capabilities")
 					grantedCaps, err := procCapability(appID, pkgInfo, cpUrl)
 					if err != nil {
-						fmt.Println(err)
+						fmt.Printf("error: failed to proc cap %v\n", err)
 					}
 
 					for idx := range grantedCaps {
@@ -100,7 +100,7 @@ func main() {
 						fmt.Printf("Enforce Cap %v\n", grantedCap)
 						_, err = capability.SendContentsToCP(pepUrl+"/app/"+appID.String()+"/cap", grantedCap)
 						if err != nil {
-							fmt.Println(err)
+							fmt.Printf("error: failed to send granted cap %v\n", err)
 						}
 					}
 
