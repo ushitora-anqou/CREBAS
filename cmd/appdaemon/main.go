@@ -322,11 +322,12 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		fmt.Println(err)
 		panic(err)
 	}
-	_, err = netlink.LinkByName(recvLinkName)
+	recvLink, err := netlink.LinkByName(recvLinkName)
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
 	}
+	recvLinkVeth := recvLink.(*netlink.Veth)
 
 	sendFd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
 	if err != nil {
@@ -339,11 +340,12 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		fmt.Println(err)
 		panic(err)
 	}
-	_, err = netlink.LinkByName(sendLinkName)
+	sendLink, err := netlink.LinkByName(sendLinkName)
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
 	}
+	sendLinkVeth := sendLink.(*netlink.Veth)
 
 	data := make([]byte, 1600)
 	for {
@@ -355,6 +357,23 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		packet := gopacket.NewPacket(data[0:n], layers.LayerTypeEthernet, gopacket.Default)
 		ethernetLayer := packet.Layer(layers.LayerTypeEthernet)
 		ethernetPacket, _ := ethernetLayer.(*layers.Ethernet)
+		wifiMACStr := "f4:8c:50:30:da:4a"
+		wifiMAC, _ := net.ParseMAC(wifiMACStr)
+		if ethernetPacket.DstMAC.String() == wifiMAC.String() || ethernetPacket.SrcMAC.String() == wifiLink.String() {
+			continue
+		}
+		if ethernetPacket.DstMAC.String() == recvLink.Attrs().HardwareAddr.String() || ethernetPacket.SrcMAC.String() == recvLink.Attrs().HardwareAddr.String() {
+			continue
+		}
+		if ethernetPacket.DstMAC.String() == sendLink.Attrs().HardwareAddr.String() || ethernetPacket.SrcMAC.String() == sendLink.Attrs().HardwareAddr.String() {
+			continue
+		}
+		if ethernetPacket.DstMAC.String() == recvLinkVeth.PeerHardwareAddr.String() || ethernetPacket.SrcMAC.String() == recvLinkVeth.PeerHardwareAddr.String() {
+			continue
+		}
+		if ethernetPacket.DstMAC.String() == sendLinkVeth.PeerHardwareAddr.String() || ethernetPacket.SrcMAC.String() == sendLinkVeth.PeerHardwareAddr.String() {
+			continue
+		}
 		if ethernetPacket.DstMAC.String() != device.HWAddress.String() && ethernetPacket.SrcMAC.String() == device.HWAddress.String() {
 			continue
 		}
