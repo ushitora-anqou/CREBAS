@@ -3,6 +3,8 @@ package capability
 import (
 	"fmt"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 type CapabilityCollection struct {
@@ -91,6 +93,26 @@ func (c *CapabilityCollection) Clear() error {
 	return nil
 }
 
+func (c *CapabilityCollection) Contains(cap *Capability) bool {
+	selectedCaps := c.Where(func(cap2 *Capability) bool {
+		return cap.CapabilityID == cap2.CapabilityID
+	})
+
+	return len(selectedCaps) != 0
+}
+
+func (c *CapabilityCollection) GetByID(capID uuid.UUID) *Capability {
+	selectedCaps := c.Where(func(cap2 *Capability) bool {
+		return capID == cap2.CapabilityID
+	})
+
+	if len(selectedCaps) != 0 {
+		return selectedCaps[0]
+	} else {
+		return nil
+	}
+}
+
 func NewCapabilityRequestCollection() *CapabilityRequestCollection {
 	c := CapabilityRequestCollection{
 		mu:         sync.Mutex{},
@@ -165,4 +187,24 @@ func (c *CapabilityRequestCollection) Clear() error {
 
 	c.collection = CapabilityRequestSlice{}
 	return nil
+}
+
+func (c *CapabilityRequestCollection) Contains(capReq *CapabilityRequest) bool {
+	selectedCapReqs := c.Where(func(capReq2 *CapabilityRequest) bool {
+		return capReq.RequestID == capReq2.RequestID
+	})
+
+	return len(selectedCapReqs) != 0
+}
+
+func (c *CapabilityRequestCollection) GetByID(capReqID uuid.UUID) *CapabilityRequest {
+	selectedCapReqs := c.Where(func(capReq2 *CapabilityRequest) bool {
+		return capReqID == capReq2.RequestID
+	})
+
+	if len(selectedCapReqs) != 0 {
+		return selectedCapReqs[0]
+	} else {
+		return nil
+	}
 }

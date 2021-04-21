@@ -14,6 +14,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -27,6 +28,7 @@ import (
 var childCmd *exec.Cmd
 var device *app.Device
 var appInfo *app.AppInfo
+var grantedCapabilities *capability.CapabilityCollection = capability.NewCapabilityCollection()
 
 func main() {
 	flag.Parse()
@@ -68,26 +70,6 @@ func main() {
 			for idx := range pkgInfo.CapabilityRequests {
 				pkgInfo.CapabilityRequests[idx].RequesterID = appID
 			}
-			_, err = capability.SendContentsToCP(cpUrl+"/cap", pkgInfo.Capabilities)
-			if err != nil {
-				panic(err)
-			}
-			for idx := range pkgInfo.CapabilityRequests {
-				capsByte, err := capability.SendContentsToCP(cpUrl+"/capReq", pkgInfo.CapabilityRequests[idx])
-				if err != nil {
-					panic(err)
-				}
-				fmt.Println(string(capsByte))
-				var grantedCap capability.CapReqResponse
-				err = json.Unmarshal(capsByte, &grantedCap)
-				if err != nil {
-					panic(err)
-				}
-
-				for _, grantedCap := range grantedCap.GrantedCapabilities {
-					capability.SendContentsToCP(pepUrl+"/app/"+appID.String()+"/cap", grantedCap)
-				}
-			}
 
 			device, err = getAppDevice(appID, pepUrl)
 			if err != nil {
@@ -100,6 +82,31 @@ func main() {
 			if !pkgInfo.TestUse {
 				go startPassing(appInfo.DeviceLinkName, appInfo.ACLLinkName, true)
 			}
+
+			go func() {
+				for {
+					fmt.Println("Processing capabilities")
+					grantedCaps, err := procCapability(appID, pkgInfo, cpUrl)
+					if err != nil {
+						fmt.Println(err)
+					}
+
+					for idx := range grantedCaps {
+						grantedCap := grantedCaps[idx]
+						if grantedCapabilities.Contains(grantedCap) {
+							continue
+						}
+						grantedCapabilities.Add(grantedCap)
+						fmt.Printf("Enforce Cap %v\n", grantedCap)
+						_, err = capability.SendContentsToCP(pepUrl+"/app/"+appID.String()+"/cap", grantedCap)
+						if err != nil {
+							fmt.Println(err)
+						}
+					}
+
+					time.Sleep(5 * time.Second)
+				}
+			}()
 
 		}
 	}
@@ -123,6 +130,32 @@ func main() {
 
 	fmt.Printf("Exiting appdaemon %v\n", exitCode)
 	os.Exit(exitCode)
+}
+
+func procCapability(appID uuid.UUID, pkgInfo *pkg.PackageInfo, cpUrl string) (capability.CapabilitySlice, error) {
+	_, err := capability.SendContentsToCP(cpUrl+"/cap", pkgInfo.Capabilities)
+	if err != nil {
+		return nil, err
+	}
+	grantedCaps := capability.CapabilitySlice{}
+	for idx := range pkgInfo.CapabilityRequests {
+		capsByte, err := capability.SendContentsToCP(cpUrl+"/capReq", pkgInfo.CapabilityRequests[idx])
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println(string(capsByte))
+		var grantedCap capability.CapReqResponse
+		err = json.Unmarshal(capsByte, &grantedCap)
+		if err != nil {
+			return nil, err
+		}
+
+		for idx := range grantedCap.GrantedCapabilities {
+			grantedCaps = append(grantedCaps, grantedCap.GrantedCapabilities[idx])
+		}
+	}
+
+	return grantedCaps, nil
 }
 
 func start(pkgInfo *pkg.PackageInfo) error {
@@ -192,42 +225,6 @@ func testMode(mode string) {
 	file.WriteString(strconv.Itoa(exitCode) + "\n")
 	file.Close()
 	os.Exit(exitCode)
-}
-
-func configureNetwork() error {
-	links, err := netlink.LinkList()
-	if err != nil {
-		return err
-	}
-
-	dgwLinkIndex, err := getDefaultRouteLinkIndex()
-	if err != nil {
-		return err
-	}
-
-	var dgwLink netlink.Link = nil
-	var childLink netlink.Link = nil
-
-	for idx := range links {
-		link := links[idx]
-		switch link.(type) {
-		case *netlink.Veth:
-			if link.Attrs().Index == dgwLinkIndex {
-				dgwLink = links[idx]
-			} else {
-				childLink = links[idx]
-			}
-		default:
-			fmt.Println("UNKNOWN")
-		}
-	}
-
-	err = configureNAT(dgwLink, childLink)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func getAppInfo(appID uuid.UUID, url string) (*app.AppInfo, error) {

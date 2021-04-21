@@ -36,13 +36,14 @@ type CapabilityAttributeBasedPolicy struct {
 
 // CapabilityRequest is a request for Capability
 type CapabilityRequest struct {
-	RequestID              uuid.UUID           `json:"requestID"`
-	RequesterID            uuid.UUID           `json:"requesterID"`
-	RequesteeID            uuid.UUID           `json:"requesteeID"`
-	RequestCapabilityName  string              `json:"requestCapability"`
-	RequestCapabilityValue string              `json:"requestCapabilityValue"`
-	RequestSignature       CapabilitySignature `json:"requestSignature"`
-	CapabilityID           uuid.UUID           `json:"capabilityID"`
+	RequestID              uuid.UUID            `json:"requestID"`
+	RequesterID            uuid.UUID            `json:"requesterID"`
+	RequesteeID            uuid.UUID            `json:"requesteeID"`
+	RequestCapabilityName  string               `json:"requestCapability"`
+	RequestCapabilityValue string               `json:"requestCapabilityValue"`
+	RequestSignature       CapabilitySignature  `json:"requestSignature"`
+	CapabilityID           uuid.UUID            `json:"capabilityID"`
+	GrantedCapabilities    CapabilityCollection `json:"-"`
 }
 
 // CapabilitySignature is a signature for capability

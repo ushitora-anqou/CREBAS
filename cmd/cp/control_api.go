@@ -1,10 +1,12 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/naoki9911/CREBAS/pkg/capability"
 )
 
@@ -27,6 +29,7 @@ func setupRouter() *gin.Engine {
 	r.GET("/cap", getCapability)
 	r.POST("/capReq", postCapabilityRequest)
 	r.GET("/capReq", getCapabilityRequest)
+	r.POST("/capReq/:reqID/grant/:capID", postCapabilityRequestGrantManually)
 
 	return r
 }
@@ -50,26 +53,105 @@ func getCapability(c *gin.Context) {
 }
 
 func postCapabilityRequest(c *gin.Context) {
-	var req capability.CapabilityRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	req := &capability.CapabilityRequest{}
+	if err := c.ShouldBindJSON(req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	grantCaps := capability.GetAutoGrantedCap(caps, config.cpID, &req)
+	if capReqs.Contains(req) {
+		req = capReqs.GetByID(req.RequestID)
+	} else {
+		capReqs.Add(req)
+	}
+
+	grantCaps := capability.GetAutoGrantedCap(caps, config.cpID, req)
+
+	for idx := range grantCaps {
+		grantCap := grantCaps[idx]
+		alreadyGrantedCaps := grantedCaps.Where(func(c1 *capability.Capability) bool {
+			return c1.AuthorizeCapabilityID == grantCap.AuthorizeCapabilityID && c1.CapabilityValue == grantCap.CapabilityValue
+		})
+		if len(alreadyGrantedCaps) != 0 {
+			continue
+		} else {
+			grantedCaps.Add(grantCap)
+		}
+
+		alreadyGrantedCaps = req.GrantedCapabilities.Where(func(c1 *capability.Capability) bool {
+			return c1.AuthorizeCapabilityID == grantCap.AuthorizeCapabilityID && c1.CapabilityValue == grantCap.CapabilityValue
+		})
+		if len(alreadyGrantedCaps) != 0 {
+			continue
+		} else {
+			req.GrantedCapabilities.Add(grantCap)
+		}
+	}
 
 	res := capability.CapReqResponse{
-		Request:             req,
-		GrantedCapabilities: grantCaps,
+		Request:             *req,
+		GrantedCapabilities: req.GrantedCapabilities.GetAll(),
 	}
 
 	c.JSON(http.StatusOK, res)
 
-	for idx := range grantCaps {
-		grantedCaps.Add(grantCaps[idx])
-	}
 }
 
 func getCapabilityRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, grantedCaps.GetAll())
+}
+
+func postCapabilityRequestGrantManually(c *gin.Context) {
+	reqID, err := uuid.Parse(c.Param("reqID"))
+	if err != nil {
+		log.Printf("error: invalid id %v", reqID)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	capID, err := uuid.Parse(c.Param("capID"))
+	if err != nil {
+		log.Printf("error: invalid id %v", capID)
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	log.Printf("info: Grant Manually CapReqID: %v CapID: %v", reqID, capID)
+
+	capReq := capReqs.GetByID(reqID)
+	if capReq == nil {
+		log.Printf("error: not found Capability Request %v", reqID)
+		c.JSON(http.StatusBadRequest, "not found Capability Request "+reqID.String())
+		return
+	}
+	cap := caps.GetByID(capID)
+	if cap == nil {
+		log.Printf("error: not found Capability %v", capID)
+		c.JSON(http.StatusBadRequest, "not found Capability "+capID.String())
+		return
+	}
+
+	grantCap := cap.GetGrantedCap(config.cpID, capReq)
+
+	alreadyGrantedCaps := grantedCaps.Where(func(c1 *capability.Capability) bool {
+		return c1.AuthorizeCapabilityID == grantCap.AuthorizeCapabilityID && c1.CapabilityValue == grantCap.CapabilityValue
+	})
+	if len(alreadyGrantedCaps) == 0 {
+		grantedCaps.Add(grantCap)
+	}
+
+	alreadyGrantedCaps = capReq.GrantedCapabilities.Where(func(c1 *capability.Capability) bool {
+		return c1.AuthorizeCapabilityID == grantCap.AuthorizeCapabilityID && c1.CapabilityValue == grantCap.CapabilityValue
+	})
+	if len(alreadyGrantedCaps) == 0 {
+		capReq.GrantedCapabilities.Add(grantCap)
+	}
+
+	res := capability.CapReqResponse{
+		Request:             *capReq,
+		GrantedCapabilities: []*capability.Capability{grantCap},
+	}
+
+	c.JSON(http.StatusOK, res)
+
 }
