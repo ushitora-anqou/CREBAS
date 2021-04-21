@@ -149,9 +149,15 @@ func prepareTestPkg() error {
 
 	pkg1 := pkg.CreateSkeltonPackageInfo()
 	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "while true; do sleep 1; done"}
-	capReqND := capability.NewCreateSkeltonCapabilityRequest()
-	capReqND.RequestCapabilityName = capability.CAPABILITY_NAME_NEIGHBOR_DISCOVERY
-	pkg1.CapabilityRequests = append(pkg1.CapabilityRequests, capReqND)
+	capReqND1 := capability.NewCreateSkeltonCapabilityRequest()
+	capReqND1.RequestCapabilityName = capability.CAPABILITY_NAME_NEIGHBOR_DISCOVERY
+	capReqND2 := capability.NewCreateSkeltonCapabilityRequest()
+	capReqND2.RequestCapabilityName = capability.CAPABILITY_NAME_TEMPERATURE
+	capReqND3 := capability.NewCreateSkeltonCapabilityRequest()
+	capReqND3.RequestCapabilityName = capability.CAPABILITY_NAME_HUMIDITY
+	pkg1.CapabilityRequests = append(pkg1.CapabilityRequests, capReqND1)
+	pkg1.CapabilityRequests = append(pkg1.CapabilityRequests, capReqND2)
+	pkg1.CapabilityRequests = append(pkg1.CapabilityRequests, capReqND3)
 	proc1, err := app.NewLinuxProcessFromPkgInfo(pkg1)
 	if err != nil {
 		return err
@@ -240,7 +246,7 @@ func setupWiFi() error {
 	for {
 		ofport, err := ofswitch.GetOFPortByLinkName(wifiLinkName)
 		if err == nil {
-			log.Printf("Found OfPort %v %v",wifiLinkName, ofport)
+			log.Printf("Found OfPort %v %v", wifiLinkName, ofport)
 			linkExt.Ofport = ofport
 			break
 		}
