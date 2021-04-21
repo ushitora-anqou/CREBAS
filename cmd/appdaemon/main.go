@@ -360,6 +360,10 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		if ethernetPacket.DstMAC.String() == appInfo.DeviceLinkPeerHWAddress || ethernetPacket.SrcMAC.String() == appInfo.DeviceLinkPeerHWAddress {
 			continue
 		}
+		ipv6Layer := packet.Layer(layers.LayerTypeIPv6)
+		if ipv6Layer != nil {
+			continue
+		}
 		udpLayer := packet.Layer(layers.LayerTypeUDP)
 		if udpLayer != nil {
 			udpPacket, _ := udpLayer.(*layers.UDP)
