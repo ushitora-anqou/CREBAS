@@ -99,7 +99,6 @@ func main() {
 			fmt.Printf("DeviceLinkName:%v ACLLinkName:%v\n", appInfo.DeviceLinkName, appInfo.ACLLinkName)
 			if !pkgInfo.TestUse {
 				go startPassing(appInfo.DeviceLinkName, appInfo.ACLLinkName, true)
-				go startPassing(appInfo.ACLLinkName, appInfo.DeviceLinkName, false)
 			}
 
 		}
@@ -312,13 +311,13 @@ func getDefaultRouteLinkIndex() (int, error) {
 }
 
 func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
-	recvFd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
+	fd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
 	}
-	defer syscall.Close(recvFd)
-	err = syscall.BindToDevice(recvFd, recvLinkName)
+	defer syscall.Close(fd)
+	err = syscall.BindToDevice(fd, recvLinkName)
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
@@ -329,17 +328,6 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		panic(err)
 	}
 
-	sendFd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
-	if err != nil {
-		fmt.Println(err)
-		panic(err)
-	}
-	defer syscall.Close(sendFd)
-	err = syscall.BindToDevice(sendFd, sendLinkName)
-	if err != nil {
-		fmt.Println(err)
-		panic(err)
-	}
 	sendLink, err := netlink.LinkByName(sendLinkName)
 	if err != nil {
 		fmt.Println(err)
@@ -347,9 +335,9 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 	}
 
 	data := make([]byte, 1600)
-	fmt.Printf("Device: %v SendVeth: %v RecvVeth:%v\n",device.HWAddress, appInfo.ACLLinkPeerHWAddress, appInfo.DeviceLinkPeerHWAddress)
+	fmt.Printf("Device: %v SendVeth: %v RecvVeth:%v\n", device.HWAddress, appInfo.ACLLinkPeerHWAddress, appInfo.DeviceLinkPeerHWAddress)
 	for {
-		n, addr, err := syscall.Recvfrom(recvFd, data, 0)
+		n, addr, err := syscall.Recvfrom(fd, data, 0)
 		if err != nil {
 			fmt.Printf("err: %v\n", err)
 			continue
@@ -380,7 +368,7 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		//fmt.Printf("Recv IF NAME: %v Send IF NAME: %v", recvLinkName, sendLinkName)
 		//fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
 		//fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)
-		err = syscall.Sendto(sendFd, data[0:n], 0, addr)
+		err = syscall.Sendto(fd, data[0:n], 0, addr)
 		if err != nil {
 			fmt.Printf("err: %v\n", err)
 			continue

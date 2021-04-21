@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
-	"os/exec"
 	"time"
 
 	"github.com/coredhcp/coredhcp/config"
@@ -223,10 +222,7 @@ func startAppWithDevice(device *app.Device) error {
 			return err
 		}
 		proc.DeviceLink = procLink
-		err = exec.Command("ip", "netns", "exec", proc.NameSpace(), "ip", "link", "set", procLink.GetLink().Attrs().Name, "promisc", "on").Run()
-		if err != nil {
-			return err
-		}
+		proc.ACLLink = procLink
 
 		err = extOfs.AddDeviceAppARPFlow(device, extOfs.Link)
 		if err != nil {
@@ -234,16 +230,6 @@ func startAppWithDevice(device *app.Device) error {
 		}
 
 		err = extOfs.AddDeviceAppTunnelFlow(device, procLink)
-		if err != nil {
-			return err
-		}
-
-		procLink2, err := proc.AddLink(extOfs, netlinkext.ExternalOFSwitch)
-		if err != nil {
-			return err
-		}
-		proc.ACLLink = procLink2
-		err = exec.Command("ip", "netns", "exec", proc.NameSpace(), "ip", "link", "set", procLink2.GetLink().Attrs().Name, "promisc", "on").Run()
 		if err != nil {
 			return err
 		}
