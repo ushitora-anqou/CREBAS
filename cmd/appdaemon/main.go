@@ -372,10 +372,12 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 				fmt.Println(data)
 				if data.Opcode == 0 {
 					if !tempAllowed {
+						fmt.Println("temp not allowed")
 						continue
 					}
 				} else if data.Opcode == 1 {
 					if !humidAllowed {
+						fmt.Println("humid not allowed")
 						continue
 					}
 				}
