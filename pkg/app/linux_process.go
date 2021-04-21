@@ -144,9 +144,9 @@ func (p *LinuxProcess) GetAppInfo() *AppInfo {
 	appInfo := AppInfo{
 		Id:                      p.id,
 		ACLLinkName:             p.ACLLink.GetLink().Attrs().Name,
-		ACLLinkPeerHWAddress:    p.ACLLink.GetLink().(*netlink.Veth).PeerHardwareAddr.String(),
+		ACLLinkPeerHWAddress:    p.ACLLink.PeerHWAddr.String(),
 		DeviceLinkName:          p.DeviceLink.GetLink().Attrs().Name,
-		DeviceLinkPeerHWAddress: p.DeviceLink.GetLink().(*netlink.Veth).PeerHardwareAddr.String(),
+		DeviceLinkPeerHWAddress: p.DeviceLink.PeerHWAddr.String(),
 	}
 
 	return &appInfo

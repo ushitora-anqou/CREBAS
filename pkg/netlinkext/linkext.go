@@ -17,7 +17,7 @@ type LinkExt struct {
 	OfType       OFType
 	Ofport       uint32
 	DefaultRoute bool
-	PeerHWAddr   string
+	PeerHWAddr   net.HardwareAddr
 }
 
 type OFType int
@@ -54,7 +54,7 @@ func (l *LinkExt) Create() error {
 	}
 	vethLink := link.(*netlink.Veth)
 	vethLink.PeerName = l.link.(*netlink.Veth).PeerName
-	vethLink.PeerHardwareAddr = l.link.(*netlink.Veth).HardwareAddr
+	l.PeerHWAddr = l.link.(*netlink.Veth).HardwareAddr
 
 	l.link = vethLink
 	return nil

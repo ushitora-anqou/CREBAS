@@ -202,6 +202,7 @@ func getDevice(c *gin.Context) {
 		return
 	}
 
+	fmt.Println(app.GetDevice())
 	c.JSON(http.StatusOK, app.GetDevice())
 }
 
