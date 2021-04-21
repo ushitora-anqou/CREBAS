@@ -292,7 +292,7 @@ func enforceCapability(cap *capability.Capability) error {
 		return err
 	}
 
-	err = extOfs.AddAppsBroadcastUDPDstFlow(serverProc.GetDevice(), serverProc.ACLLink, clientProc.GetDevice(), clientProc.ACLLink, 8000)
+	err = extOfs.AddAppsBroadcastUDPDstFlow(clientProc.GetDevice(), clientProc.ACLLink, serverProc.GetDevice(), serverProc.ACLLink, 8000)
 	if err != nil {
 		return err
 	}
