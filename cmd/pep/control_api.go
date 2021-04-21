@@ -11,6 +11,7 @@ import (
 	"github.com/naoki9911/CREBAS/pkg/app"
 	"github.com/naoki9911/CREBAS/pkg/capability"
 	"github.com/naoki9911/CREBAS/pkg/netlinkext"
+	"github.com/naoki9911/CREBAS/pkg/ofswitch"
 	"github.com/naoki9911/CREBAS/pkg/pkg"
 	"github.com/vishvananda/netlink"
 )
@@ -243,6 +244,15 @@ func postAppCap(c *gin.Context) {
 	c.JSON(http.StatusOK, nil)
 }
 
+func getOvsInfo(c *gin.Context) {
+	ovsInfo := ofswitch.OvsInfo{
+		OvsACLHWAddr: aclOfs.Link.GetHWAddress().String(),
+		OvsExtHWAddr: extOfs.Link.GetHWAddress().String(),
+	}
+
+	c.JSON(http.StatusOK, ovsInfo)
+}
+
 func StartAPIServer() error {
 	return setupRouter().Run("0.0.0.0:8080")
 }
@@ -261,6 +271,7 @@ func setupRouter() *gin.Engine {
 	r.POST("/app/:id/device", setDevice)
 	r.GET("/app/:id/device", getDevice)
 	r.POST("/app/:id/cap", postAppCap)
+	r.GET("/ovs", getOvsInfo)
 
 	return r
 }

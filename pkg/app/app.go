@@ -27,4 +27,6 @@ type AppInfo struct {
 	ACLLinkPeerHWAddress    string    `json:"aclLinkPeerHWAddress`
 	DeviceLinkName          string    `json:"deviceLinkName"`
 	DeviceLinkPeerHWAddress string    `json:"deviceLinkPeerHWAddress`
+	OvsACLHWAddr            string    `json:"ovsACLHWAddr"`
+	OvsExtHWAddr            string    `json:"ovsExtHWAddr"`
 }
