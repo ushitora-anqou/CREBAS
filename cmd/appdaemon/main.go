@@ -30,6 +30,9 @@ var device *app.Device
 var appInfo *app.AppInfo
 var grantedCapabilities *capability.CapabilityCollection = capability.NewCapabilityCollection()
 
+var tempAllowed = false
+var humidAllowed = false
+
 func main() {
 	flag.Parse()
 	args := flag.Args()
@@ -98,6 +101,15 @@ func main() {
 						if err != nil {
 							fmt.Printf("error: failed to send granted cap %v\n", err)
 						}
+
+						if grantedCap.CapabilityName == capability.CAPABILITY_NAME_TEMPERATURE {
+							tempAllowed = true
+						}
+
+						if grantedCap.CapabilityName == capability.CAPABILITY_NAME_HUMIDITY {
+							humidAllowed = true
+						}
+
 					}
 
 					time.Sleep(5 * time.Second)
@@ -291,6 +303,11 @@ func getDefaultRoute() (net.IP, error) {
 	return nil, fmt.Errorf("default route not found")
 }
 
+type Data struct {
+	Opcode int     `json:"opcode"`
+	Value  float64 `json:"value"`
+}
+
 func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 	fd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
 	if err != nil {
@@ -350,6 +367,18 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 				fmt.Printf("src port %d to dst to %d\n", udpPacket.SrcPort, udpPacket.DstPort)
 				applicationLayer := packet.ApplicationLayer()
 				fmt.Printf("%s\n", applicationLayer.Payload())
+				var data = Data{}
+				json.Unmarshal(applicationLayer.Payload(), data)
+				if data.Opcode == 0 {
+					if !tempAllowed {
+						continue
+					}
+				} else if data.Opcode == 1 {
+					if !humidAllowed {
+						continue
+					}
+				}
+
 			}
 		}
 
