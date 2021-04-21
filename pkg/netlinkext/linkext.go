@@ -54,7 +54,7 @@ func (l *LinkExt) Create() error {
 	}
 	vethLink := link.(*netlink.Veth)
 	vethLink.PeerName = l.link.(*netlink.Veth).PeerName
-	l.PeerHWAddr = l.link.(*netlink.Veth).HardwareAddr
+	l.PeerHWAddr = link.(*netlink.Veth).HardwareAddr
 
 	l.link = vethLink
 	return nil
