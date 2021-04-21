@@ -15,6 +15,11 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
+type OvsInfo struct {
+	OvsACLHWAddr string `json:"ovsACLHWAddr"`
+	OvsExtHWAddr string `json:"ovsExtHWAddr"`
+}
+
 // OFSwitch is a struct to manage openflow switch
 type OFSwitch struct {
 	Name          string

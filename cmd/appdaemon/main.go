@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/naoki9911/CREBAS/pkg/app"
 	"github.com/naoki9911/CREBAS/pkg/capability"
+	"github.com/naoki9911/CREBAS/pkg/ofswitch"
 	"github.com/naoki9911/CREBAS/pkg/pkg"
 	"github.com/vishvananda/netlink"
 )
@@ -29,6 +30,7 @@ var childCmd *exec.Cmd
 var device *app.Device
 var appInfo *app.AppInfo
 var grantedCapabilities *capability.CapabilityCollection = capability.NewCapabilityCollection()
+var ovsInfo *ofswitch.OvsInfo
 
 var tempAllowed = false
 var humidAllowed = false
@@ -75,6 +77,13 @@ func main() {
 			}
 
 			device, err = getAppDevice(appID, pepUrl)
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				fmt.Println(device)
+			}
+
+			ovsInfo, err = getOvsInfo(pepUrl)
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -287,6 +296,29 @@ func getAppDevice(appID uuid.UUID, url string) (*app.Device, error) {
 	return &device, nil
 }
 
+func getOvsInfo(url string) (*ofswitch.OvsInfo, error) {
+	urlOvs := url + "/ovs"
+	fmt.Println(urlOvs)
+	resp, err := http.Get(urlOvs)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("HOGE" + urlOvs)
+
+	respByte, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	ovsInfo := ofswitch.OvsInfo{}
+	err = json.Unmarshal(respByte, &ovsInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ovsInfo, nil
+
+}
+
 func getDefaultRoute() (net.IP, error) {
 	routeList, err := netlink.RouteList(nil, netlink.FAMILY_V4)
 	if err != nil {
@@ -334,6 +366,7 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 
 	data := make([]byte, 1600)
 	fmt.Printf("Device: %v SendVeth: %v RecvVeth:%v\n", device.HWAddress, appInfo.ACLLinkPeerHWAddress, appInfo.DeviceLinkPeerHWAddress)
+	fmt.Printf("OvsACL: %v OvsExt: %v\n", ovsInfo.OvsACLHWAddr, ovsInfo.OvsExtHWAddr)
 	for {
 		n, addr, err := syscall.Recvfrom(fd, data, 0)
 		if err != nil {
@@ -358,6 +391,12 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 			continue
 		}
 		if ethernetPacket.DstMAC.String() == appInfo.DeviceLinkPeerHWAddress || ethernetPacket.SrcMAC.String() == appInfo.DeviceLinkPeerHWAddress {
+			continue
+		}
+		if ethernetPacket.DstMAC.String() == ovsInfo.OvsACLHWAddr || ethernetPacket.SrcMAC.String() == ovsInfo.OvsACLHWAddr {
+			continue
+		}
+		if ethernetPacket.DstMAC.String() == ovsInfo.OvsExtHWAddr || ethernetPacket.SrcMAC.String() == ovsInfo.OvsExtHWAddr {
 			continue
 		}
 		ipv6Layer := packet.Layer(layers.LayerTypeIPv6)
