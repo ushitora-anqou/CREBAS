@@ -297,6 +297,7 @@ func startPassing(recvLinkName string, sendLinkName string) {
 		fmt.Println(err)
 		panic(err)
 	}
+	recvLinkVeth := recvLink.(*netlink.Veth)
 
 	sendFd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
 	if err != nil {
@@ -314,6 +315,7 @@ func startPassing(recvLinkName string, sendLinkName string) {
 		fmt.Println(err)
 		panic(err)
 	}
+	sendLinkVeth := sendLink.(*netlink.Veth)
 
 	data := make([]byte, 1600)
 	for {
@@ -331,6 +333,12 @@ func startPassing(recvLinkName string, sendLinkName string) {
 			continue
 		}
 		if ethernetPacket.DstMAC.String() == sendLink.Attrs().HardwareAddr.String() || ethernetPacket.SrcMAC.String() == sendLink.Attrs().HardwareAddr.String() {
+			continue
+		}
+		if ethernetPacket.DstMAC.String() == recvLinkVeth.PeerHardwareAddr.String() || ethernetPacket.SrcMAC.String() == recvLinkVeth.PeerHardwareAddr.String() {
+			continue
+		}
+		if ethernetPacket.DstMAC.String() == sendLinkVeth.PeerHardwareAddr.String() || ethernetPacket.SrcMAC.String() == sendLinkVeth.PeerHardwareAddr.String() {
 			continue
 		}
 		if ethernetPacket.DstMAC.String() == wifiMAC.String() || ethernetPacket.SrcMAC.String() == wifiMAC.String() {
