@@ -368,7 +368,7 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 				applicationLayer := packet.ApplicationLayer()
 				fmt.Printf("%s\n", applicationLayer.Payload())
 				var data = Data{}
-				json.Unmarshal(applicationLayer.Payload(), data)
+				json.Unmarshal(applicationLayer.Payload(), &data)
 				if data.Opcode == 0 {
 					if !tempAllowed {
 						continue
