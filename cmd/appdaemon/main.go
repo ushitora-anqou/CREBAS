@@ -413,15 +413,17 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 				var data = Data{}
 				json.Unmarshal(applicationLayer.Payload(), &data)
 				fmt.Println(data)
-				if data.Opcode == 0 {
-					if !tempAllowed {
-						fmt.Println("temp not allowed")
-						continue
-					}
-				} else if data.Opcode == 1 {
-					if !humidAllowed {
-						fmt.Println("humid not allowed")
-						continue
+				if !appInfo.Server {
+					if data.Opcode == 0 {
+						if !tempAllowed {
+							fmt.Println("temp not allowed")
+							continue
+						}
+					} else if data.Opcode == 1 {
+						if !humidAllowed {
+							fmt.Println("humid not allowed")
+							continue
+						}
 					}
 				}
 

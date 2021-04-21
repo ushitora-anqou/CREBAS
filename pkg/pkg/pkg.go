@@ -20,6 +20,7 @@ type PackageInfo struct {
 	CapabilityRequests capability.CapabilityRequestSlice
 
 	TestUse bool
+	Server  bool
 }
 
 type PackageMetaInfo struct {
@@ -103,6 +104,7 @@ func CreateSkeltonPackage(pkgPath string) *PackageInfo {
 			CMD:      []string{"ping", "127.0.0.1"},
 		},
 		TestUse:            false,
+		Server:             false,
 		Capabilities:       []*capability.Capability{},
 		CapabilityRequests: []*capability.CapabilityRequest{},
 	}
@@ -139,6 +141,7 @@ func CreateSkeltonPackageInfo() *PackageInfo {
 			CMD:      []string{"ping", "127.0.0.1"},
 		},
 		TestUse:            false,
+		Server:             false,
 		Capabilities:       []*capability.Capability{},
 		CapabilityRequests: []*capability.CapabilityRequest{},
 	}

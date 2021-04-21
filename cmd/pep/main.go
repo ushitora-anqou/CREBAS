@@ -149,6 +149,7 @@ func prepareTestPkg() error {
 
 	pkg1 := pkg.CreateSkeltonPackageInfo()
 	pkg1.MetaInfo.CMD = []string{"/bin/bash", "-c", "while true; do sleep 1; done"}
+	pkg1.Server = false
 	capReqND1 := capability.NewCreateSkeltonCapabilityRequest()
 	capReqND1.RequestCapabilityName = capability.CAPABILITY_NAME_NEIGHBOR_DISCOVERY
 	capReqND2 := capability.NewCreateSkeltonCapabilityRequest()
@@ -188,6 +189,7 @@ func prepareTestPkg() error {
 
 	pkg2 := pkg.CreateSkeltonPackageInfo()
 	pkg2.MetaInfo.CMD = []string{"/bin/bash", "-c", "while true; do sleep 1; done"}
+	pkg2.Server = true
 	capND := capability.NewCreateSkeltonCapability()
 	capND.CapabilityName = capability.CAPABILITY_NAME_NEIGHBOR_DISCOVERY
 	capND.CapabilityValue = "8000/udp"
