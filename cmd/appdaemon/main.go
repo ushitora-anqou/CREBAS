@@ -362,8 +362,8 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 		udpLayer := packet.Layer(layers.LayerTypeUDP)
 		if udpLayer != nil {
 			udpPacket, _ := udpLayer.(*layers.UDP)
-			fmt.Printf("src port %d to dst to %d\n", udpPacket.SrcPort, udpPacket.DstPort)
 			if udpPacket.DstPort == 8000 {
+				fmt.Printf("src port %d to dst to %d\n", udpPacket.SrcPort, udpPacket.DstPort)
 				applicationLayer := packet.ApplicationLayer()
 				fmt.Printf("%s\n", applicationLayer.Payload())
 			}
