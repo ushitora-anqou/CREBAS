@@ -369,6 +369,7 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 				fmt.Printf("%s\n", applicationLayer.Payload())
 				var data = Data{}
 				json.Unmarshal(applicationLayer.Payload(), &data)
+				fmt.Println(data)
 				if data.Opcode == 0 {
 					if !tempAllowed {
 						continue
