@@ -283,29 +283,35 @@ func getDefaultRouteLinkIndex() (int, error) {
 func startPassing(recvLinkName string, sendLinkName string) {
 	recvFd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 	defer syscall.Close(recvFd)
 	err = syscall.BindToDevice(recvFd, recvLinkName)
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 	recvLink, err := netlink.LinkByName(recvLinkName)
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 
 	sendFd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 	defer syscall.Close(recvFd)
 	err = syscall.BindToDevice(recvFd, sendLinkName)
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 	sendLink, err := netlink.LinkByName(sendLinkName)
 	if err != nil {
+		fmt.Println(err)
 		panic(err)
 	}
 
@@ -330,10 +336,9 @@ func startPassing(recvLinkName string, sendLinkName string) {
 		if ethernetPacket.DstMAC.String() == wifiMAC.String() || ethernetPacket.SrcMAC.String() == wifiMAC.String() {
 			continue
 		}
-		//fmt.Println("IF NAME: ", ifLink.Name)
-		//fmt.Println("IF NAME: ", ifLink.Name)
-		//fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
-		//fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)
+		fmt.Printf("Recv IF NAME: %v Send IF NAME: %v", recvLinkName, sendLinkName)
+		fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
+		fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)
 		err = syscall.Sendto(sendFd, data[0:n], 0, addr)
 		if err != nil {
 			fmt.Printf("err: %v\n", err)
