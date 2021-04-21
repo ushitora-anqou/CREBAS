@@ -348,6 +348,7 @@ func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 	sendLinkVeth := sendLink.(*netlink.Veth)
 
 	data := make([]byte, 1600)
+	fmt.Printf("SendVeth: %v RecvVeth:%v\n", sendLinkVeth.PeerHardwareAddr.String(), recvLinkVeth.PeerHardwareAddr.String())
 	for {
 		n, addr, err := syscall.Recvfrom(recvFd, data, 0)
 		if err != nil {
