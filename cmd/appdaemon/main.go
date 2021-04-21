@@ -25,6 +25,7 @@ import (
 )
 
 var childCmd *exec.Cmd
+var device *app.Device
 
 func main() {
 	flag.Parse()
@@ -87,10 +88,17 @@ func main() {
 				}
 			}
 
+			device, err = getAppDevice(appID, pepUrl)
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				fmt.Println(device)
+			}
+
 			fmt.Printf("DeviceLinkName:%v ACLLinkName:%v\n", appInfo.DeviceLinkName, appInfo.ACLLinkName)
 			if !pkgInfo.TestUse {
-				go startPassing(appInfo.DeviceLinkName, appInfo.ACLLinkName)
-				go startPassing(appInfo.ACLLinkName, appInfo.DeviceLinkName)
+				go startPassing(appInfo.DeviceLinkName, appInfo.ACLLinkName, true)
+				go startPassing(appInfo.ACLLinkName, appInfo.DeviceLinkName, false)
 			}
 
 		}
@@ -248,6 +256,28 @@ func getAppInfo(appID uuid.UUID, url string) (*app.AppInfo, error) {
 	return &appInfo, nil
 }
 
+func getAppDevice(appID uuid.UUID, url string) (*app.Device, error) {
+	urlApp := url + "/app/" + appID.String() + "/device"
+	fmt.Println(urlApp)
+	resp, err := http.Get(urlApp)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("HOGE" + urlApp)
+
+	respByte, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	device := app.Device{}
+	err = json.Unmarshal(respByte, &device)
+	if err != nil {
+		return nil, err
+	}
+
+	return &device, nil
+}
+
 func getDefaultRoute() (net.IP, error) {
 	routeList, err := netlink.RouteList(nil, netlink.FAMILY_V4)
 	if err != nil {
@@ -280,7 +310,7 @@ func getDefaultRouteLinkIndex() (int, error) {
 	return 0, fmt.Errorf("default route not found")
 }
 
-func startPassing(recvLinkName string, sendLinkName string) {
+func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {
 	recvFd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
 	if err != nil {
 		fmt.Println(err)
@@ -292,12 +322,11 @@ func startPassing(recvLinkName string, sendLinkName string) {
 		fmt.Println(err)
 		panic(err)
 	}
-	recvLink, err := netlink.LinkByName(recvLinkName)
+	_, err = netlink.LinkByName(recvLinkName)
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
 	}
-	recvLinkVeth := recvLink.(*netlink.Veth)
 
 	sendFd, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, 0x0300)
 	if err != nil {
@@ -310,12 +339,11 @@ func startPassing(recvLinkName string, sendLinkName string) {
 		fmt.Println(err)
 		panic(err)
 	}
-	sendLink, err := netlink.LinkByName(sendLinkName)
+	_, err = netlink.LinkByName(sendLinkName)
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
 	}
-	sendLinkVeth := sendLink.(*netlink.Veth)
 
 	data := make([]byte, 1600)
 	for {
@@ -327,29 +355,12 @@ func startPassing(recvLinkName string, sendLinkName string) {
 		packet := gopacket.NewPacket(data[0:n], layers.LayerTypeEthernet, gopacket.Default)
 		ethernetLayer := packet.Layer(layers.LayerTypeEthernet)
 		ethernetPacket, _ := ethernetLayer.(*layers.Ethernet)
-		wifiMACStr := "f4:8c:50:30:da:4a"
-		wifiMAC, _ := net.ParseMAC(wifiMACStr)
-		if ethernetPacket.DstMAC.String() == recvLink.Attrs().HardwareAddr.String() || ethernetPacket.SrcMAC.String() == recvLink.Attrs().HardwareAddr.String() {
+		if ethernetPacket.DstMAC.String() != device.HWAddress.String() && ethernetPacket.SrcMAC.String() == device.HWAddress.String() {
 			continue
 		}
-		if ethernetPacket.DstMAC.String() == sendLink.Attrs().HardwareAddr.String() || ethernetPacket.SrcMAC.String() == sendLink.Attrs().HardwareAddr.String() {
-			continue
-		}
-		if ethernetPacket.DstMAC.String() == recvLinkVeth.PeerHardwareAddr.String() || ethernetPacket.SrcMAC.String() == recvLinkVeth.PeerHardwareAddr.String() {
-			continue
-		}
-		if ethernetPacket.DstMAC.String() == sendLinkVeth.PeerHardwareAddr.String() || ethernetPacket.SrcMAC.String() == sendLinkVeth.PeerHardwareAddr.String() {
-			continue
-		}
-		if ethernetPacket.DstMAC.String() == wifiMAC.String() || ethernetPacket.SrcMAC.String() == wifiMAC.String() {
-			continue
-		}
-		deviceMAC, _ := net.ParseMAC("58:cb:52:56:73:21")
-		if ethernetPacket.SrcMAC.String() == deviceMAC.String(){
 		fmt.Printf("Recv IF NAME: %v Send IF NAME: %v", recvLinkName, sendLinkName)
 		fmt.Println("Source MAC: ", ethernetPacket.SrcMAC)
 		fmt.Println("Destination MAC: ", ethernetPacket.DstMAC)
-		}
 		err = syscall.Sendto(sendFd, data[0:n], 0, addr)
 		if err != nil {
 			fmt.Printf("err: %v\n", err)
