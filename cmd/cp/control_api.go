@@ -42,7 +42,10 @@ func postCapability(c *gin.Context) {
 	}
 
 	for idx := range req {
-		caps.Add(&req[idx])
+		cap := req[idx]
+		if !caps.Contains(&cap) {
+			caps.Add(&cap)
+		}
 	}
 
 	c.JSON(http.StatusOK, req)
