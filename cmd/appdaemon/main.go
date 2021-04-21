@@ -79,10 +79,6 @@ func main() {
 			}
 
 			fmt.Printf("DeviceLinkName:%v ACLLinkName:%v\n", appInfo.DeviceLinkName, appInfo.ACLLinkName)
-			if !pkgInfo.TestUse {
-				go startPassing(appInfo.DeviceLinkName, appInfo.ACLLinkName, true)
-			}
-
 			go func() {
 				for {
 					fmt.Println("Processing capabilities")
@@ -107,6 +103,10 @@ func main() {
 					time.Sleep(5 * time.Second)
 				}
 			}()
+
+			if !pkgInfo.TestUse {
+				go startPassing(appInfo.DeviceLinkName, appInfo.ACLLinkName, true)
+			}
 
 		}
 	}
@@ -289,22 +289,6 @@ func getDefaultRoute() (net.IP, error) {
 	}
 
 	return nil, fmt.Errorf("default route not found")
-}
-
-func getDefaultRouteLinkIndex() (int, error) {
-	routeList, err := netlink.RouteList(nil, netlink.FAMILY_V4)
-	if err != nil {
-		return 0, err
-	}
-
-	for idx := range routeList {
-		route := routeList[idx]
-		if route.Scope == netlink.SCOPE_UNIVERSE {
-			return route.LinkIndex, nil
-		}
-	}
-
-	return 0, fmt.Errorf("default route not found")
 }
 
 func startPassing(recvLinkName string, sendLinkName string, recvIsDevice bool) {

@@ -293,14 +293,18 @@ func enforceCapability(cap *capability.Capability) error {
 		return err
 	}
 
-	err = extOfs.AddAppsBroadcastUDPDstFlow(clientProc.GetDevice(), clientProc.ACLLink, serverProc.GetDevice(), serverProc.ACLLink, 8000)
-	if err != nil {
-		return err
+	if cap.CapabilityName == capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION {
+		err = extOfs.AddAppsBroadcastUDPDstFlow(clientProc.GetDevice(), clientProc.ACLLink, serverProc.GetDevice(), serverProc.ACLLink, 8000)
+		if err != nil {
+			return err
+		}
 	}
 
-	err = extOfs.AddAppsUnicastUDPDstFlow(clientProc.GetDevice(), clientProc.ACLLink, serverProc.GetDevice(), serverProc.ACLLink, 8000)
-	if err != nil {
-		return err
+	if cap.CapabilityName == capability.CAPABILITY_NAME_TEMPERATURE || cap.CapabilityName == capability.CAPABILITY_NAME_HUMIDITY {
+		err = extOfs.AddAppsUnicastUDPDstFlow(clientProc.GetDevice(), clientProc.ACLLink, serverProc.GetDevice(), serverProc.ACLLink, 8000)
+		if err != nil {
+			return err
+		}
 	}
 
 	log.Printf("info: Successfully enforced cap")
