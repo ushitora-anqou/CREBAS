@@ -10,6 +10,11 @@ import (
 	"github.com/naoki9911/CREBAS/pkg/capability"
 )
 
+var caps = capability.NewCapabilityCollection()
+var grantedCaps = capability.NewCapabilityCollection()
+var capReqs = capability.NewCapabilityRequestCollection()
+var userGrantPolicies = capability.NewUserGrantPolicyCollection()
+
 func StartAPIServer() error {
 	return setupRouter().Run("0.0.0.0:8081")
 }
@@ -30,6 +35,7 @@ func setupRouter() *gin.Engine {
 	r.POST("/capReq", postCapabilityRequest)
 	r.GET("/capReq", getCapabilityRequest)
 	r.POST("/capReq/:reqID/grant/:capID", postCapabilityRequestGrantManually)
+	r.POST("/user/grantPolicy", postUserGrantPolicy)
 
 	return r
 }
@@ -46,6 +52,20 @@ func postCapability(c *gin.Context) {
 		if !caps.Contains(&cap) {
 			caps.Add(&cap)
 		}
+	}
+
+	c.JSON(http.StatusOK, req)
+}
+
+func postUserGrantPolicy(c *gin.Context) {
+	var req capability.UserGrantPolicy
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if !userGrantPolicies.Contains(&req) {
+		userGrantPolicies.Add(&req)
 	}
 
 	c.JSON(http.StatusOK, req)
@@ -68,7 +88,7 @@ func postCapabilityRequest(c *gin.Context) {
 		capReqs.Add(req)
 	}
 
-	grantCaps := capability.GetAutoGrantedCap(caps, config.cpID, req)
+	grantCaps := capability.GetUserAndManualGrantedCap(caps, config.cpID, req, userGrantPolicies)
 
 	for idx := range grantCaps {
 		grantCap := grantCaps[idx]

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 
@@ -51,13 +52,6 @@ type CapabilitySignature struct {
 	SignerID  uuid.UUID `json:"signerID"`
 	SigneeID  uuid.UUID `json:"signeeID"`
 	Signature string    `json:"signature"`
-}
-
-// UserGrantPolicy is a policy for user customized
-type UserGrantPolicy struct {
-	CapabilityID   uuid.UUID   `json:"capabilityID"`
-	AutoGrant      bool        `json:"autoGrant"`
-	AllowedUsersID []uuid.UUID `json:"allowedUsersID"`
 }
 
 type CapReqResponse struct {
@@ -179,16 +173,24 @@ func (cap *Capability) getExternalCommunicationGrantedCap(cpID uuid.UUID, capReq
 	return &grantedCap
 }
 
-func GetAutoGrantedCap(caps *CapabilityCollection, cpID uuid.UUID, capReq *CapabilityRequest) CapabilitySlice {
+func GetUserAndManualGrantedCap(caps *CapabilityCollection, cpID uuid.UUID, capReq *CapabilityRequest, userPolicies *UserGrantPolicyCollection) CapabilitySlice {
 	candidateCaps := caps.Where(func(a *Capability) bool {
 		return a.CapabilityName == capReq.RequestCapabilityName
 	})
 
 	grantedCaps := CapabilitySlice{}
-
 	for idx := range candidateCaps {
 		cap := candidateCaps[idx]
-		if cap.GrantCondition == "always" {
+		granted, found, err := userPolicies.IsGranted(cap, capReq)
+		if err != nil {
+			log.Printf("error: err %v", err)
+		}
+
+		if found && (!granted) {
+			continue
+		}
+
+		if (found && granted) || cap.GrantCondition == "always" {
 			grantedCap := cap.GetGrantedCap(cpID, capReq)
 			if grantedCap == nil {
 				continue

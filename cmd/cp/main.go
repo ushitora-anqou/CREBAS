@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/google/uuid"
-	"github.com/naoki9911/CREBAS/pkg/capability"
 )
 
 type CPConfig struct {
@@ -23,9 +22,6 @@ func loadCPConfig() CPConfig {
 	return cpConfig
 }
 
-var caps = capability.NewCapabilityCollection()
-var grantedCaps = capability.NewCapabilityCollection()
-var capReqs = capability.NewCapabilityRequestCollection()
 var config CPConfig = loadCPConfig()
 
 func main() {
