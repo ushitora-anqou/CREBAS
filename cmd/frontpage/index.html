@@ -1,0 +1,88 @@
+  
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+        <title>CREBAS</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+        <script src="page.js"></script>
+    </head>
+
+    <body>
+        <h1>CREBAS</h1>
+        <table class="table table-stripped">
+            <thead>
+                <tr>
+                    <th>Virtual Device ID</th>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Version</th>
+                    <th>IPv4 Address</th>
+                    <th>Stop</th>
+                </tr>
+            </thead>
+            <tbody id="app-table-body"></tbody>
+        </table>
+
+        <h3>Delegated Capabilities</h3>
+        <table class="table table-stripped">
+            <thead>
+                <tr>
+                    <th>CapabilityID</th>
+                    <th>AssignerID</th>
+                    <th>AssigneeID</th>
+                    <th>CapabilityName</th>
+                    <th>CapabilityValue</th>
+                    <th>AuthorizeCapabilityID</th>
+                    <th>RequesterAttribute</th>
+                    <th>GrantCondition</th>
+                    <th>GrantValue</th>
+                </tr>
+            </thead>
+            <tbody id="cap-delegated-list-table-body">
+
+            </tbody>
+        </table>
+
+        <h3>Pending Capability Requests</h3>
+        <table class="table table-stripped">
+            <thead>
+                <tr>
+                    <th>RequestID</th>
+                    <th>RequesterID</th>
+                    <th>RequesteeID</th>
+                    <th>RequestCapability</th>
+                    <th>RequestCapabilityValue</th>
+                    <th>Op</th>
+                </tr>
+            </thead>
+            <tbody id="cap-req-list-table-body">
+            </tbody>
+        </table>
+
+        <h3>Granted Capabilities</h3>
+        <table class="table table-stripped">
+            <thead>
+                <tr>
+                    <th>CapabilityID</th>
+                    <th>GrantCondition</th>
+                    <th>AssignerID</th>
+                    <th>AssigneeID</th>
+                    <th>CapabilityName</th>
+                    <th>CapabilityValue</th>
+                    <th>AuthorizeCapabilityID</th>
+                    <th>RequesterAttribute</th>
+                    <th>GrantCondition</th>
+                    <th>GrantValue</th>
+                </tr>
+            </thead>
+            <tbody id="cap-granted-list-table-body">
+
+            </tbody>
+        </table>
+
+    </body>
+</html>

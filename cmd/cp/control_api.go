@@ -32,8 +32,11 @@ func setupRouter() *gin.Engine {
 	})
 	r.POST("/cap", postCapability)
 	r.GET("/cap", getCapability)
+	r.GET("/cap/granted", getGrantedCapability)
+	r.GET("/cap/delegated", getDelegatedCapability)
 	r.POST("/capReq", postCapabilityRequest)
 	r.GET("/capReq", getCapabilityRequest)
+	r.GET("/capReq/pending", getPendingCapabilityRequest)
 	r.POST("/capReq/:reqID/grant/:capID", postCapabilityRequestGrantManually)
 	r.POST("/user/grantPolicy", postUserGrantPolicy)
 
@@ -73,6 +76,18 @@ func postUserGrantPolicy(c *gin.Context) {
 
 func getCapability(c *gin.Context) {
 	c.JSON(http.StatusOK, caps.GetAll())
+}
+
+func getGrantedCapability(c *gin.Context) {
+	c.JSON(http.StatusOK, grantedCaps.GetAll())
+}
+
+func getDelegatedCapability(c *gin.Context) {
+	delegatedCaps := caps.Where(func(c *capability.Capability) bool {
+		return c.CapabilityID == c.AuthorizeCapabilityID
+	})
+
+	c.JSON(http.StatusOK, delegatedCaps)
 }
 
 func postCapabilityRequest(c *gin.Context) {
@@ -122,6 +137,35 @@ func postCapabilityRequest(c *gin.Context) {
 
 func getCapabilityRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, capReqs.GetAll())
+}
+
+func getPendingCapabilityRequest(c *gin.Context) {
+	capReqAll := capReqs.GetAll()
+	delegatedCaps := caps.Where(func(c *capability.Capability) bool {
+		return c.CapabilityID == c.AuthorizeCapabilityID
+	})
+	pendingCapReqs := []capability.CapReqPendingResponse{}
+	for idx := range capReqAll {
+		pendingCapReq := capability.CapReqPendingResponse{}
+		capReq := capReqAll[idx]
+		pendingCapReq.Request = *capReq
+		candidateCaps := delegatedCaps.Where(func(c *capability.Capability) bool {
+			return c.CapabilityName == capReq.RequestCapabilityName
+		})
+
+		for idx := range candidateCaps {
+			alreadyGrantedCaps := grantedCaps.Where(func(c *capability.Capability) bool {
+				return c.AppID == candidateCaps[idx].AppID
+			})
+			if len(alreadyGrantedCaps) != 0 {
+				continue
+			}
+
+			pendingCapReq.PendingCapabilities = append(pendingCapReq.PendingCapabilities, candidateCaps[idx])
+		}
+		pendingCapReqs = append(pendingCapReqs, pendingCapReq)
+	}
+	c.JSON(http.StatusOK, pendingCapReqs)
 }
 
 func postCapabilityRequestGrantManually(c *gin.Context) {

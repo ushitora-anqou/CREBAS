@@ -59,6 +59,11 @@ type CapReqResponse struct {
 	GrantedCapabilities CapabilitySlice   `json:"grantedCapabilities"`
 }
 
+type CapReqPendingResponse struct {
+	Request             CapabilityRequest `json:"request"`
+	PendingCapabilities CapabilitySlice   `json:"pendingCapabilities"`
+}
+
 const (
 	CAPABILITY_NAME_EXTERNAL_COMMUNICATION = "ExternalCommunication"
 	CAPABILITY_NAME_TEMPERATURE            = "Temperature"
