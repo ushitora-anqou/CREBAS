@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rsa"
 	"fmt"
 	"log"
 	"net/http"
@@ -218,6 +219,24 @@ func postAppCap(c *gin.Context) {
 	var req capability.Capability
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.AssignerID == cpCert.AppID {
+		if req.Verify(cpCert.Certificate.PublicKey.(*rsa.PublicKey)) != nil {
+			fmt.Printf("error: Failed to verify %v\n", req.CapabilityID)
+			c.JSON(http.StatusBadRequest, "Failed to verify")
+			return
+		}
+	} else if req.AssignerID == userCert.AppID {
+		if req.Verify(userCert.Certificate.PublicKey.(*rsa.PublicKey)) != nil {
+			fmt.Printf("error: Failed to verify %v\n", req.CapabilityID)
+			c.JSON(http.StatusBadRequest, "Failed to verify")
+			return
+		}
+	} else {
+		fmt.Printf("Unexpected AssignerID %v\n", req.AssignerID)
+		c.JSON(http.StatusInternalServerError, "Unexpected AssignerID "+req.AssignerID.String())
 		return
 	}
 

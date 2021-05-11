@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rsa"
 	"log"
 	"net/http"
 
@@ -14,6 +15,7 @@ var caps = capability.NewCapabilityCollection()
 var grantedCaps = capability.NewCapabilityCollection()
 var capReqs = capability.NewCapabilityRequestCollection()
 var userGrantPolicies = capability.NewUserGrantPolicyCollection()
+var appCerts = capability.NewAppCertificateCollection()
 
 func StartAPIServer() error {
 	return setupRouter().Run("0.0.0.0:8081")
@@ -30,6 +32,9 @@ func setupRouter() *gin.Engine {
 			"message": "pong",
 		})
 	})
+	r.POST("/app/cert", postAppCert)
+	r.GET("/app/cpCert", getCPCert)
+	r.GET("/app/userCert", getUserCert)
 	r.POST("/cap", postCapability)
 	r.GET("/cap", getCapability)
 	r.GET("/cap/granted", getGrantedCapability)
@@ -43,6 +48,37 @@ func setupRouter() *gin.Engine {
 	return r
 }
 
+func postAppCert(c *gin.Context) {
+	var req capability.AppCertificate
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := req.Decode()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err = capability.VerifyCertificate(req.Certificate, config.caCert)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	appCerts.Add(&req)
+	c.JSON(http.StatusOK, req)
+}
+
+func getCPCert(c *gin.Context) {
+	c.JSON(http.StatusOK, config.cpCert)
+}
+
+func getUserCert(c *gin.Context) {
+	c.JSON(http.StatusOK, config.userCert)
+}
+
 func postCapability(c *gin.Context) {
 	var req []capability.Capability
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -52,6 +88,16 @@ func postCapability(c *gin.Context) {
 
 	for idx := range req {
 		cap := req[idx]
+		appCert := appCerts.GetByID(cap.AssignerID)
+		if appCert == nil {
+			c.JSON(http.StatusBadRequest, "appCert "+cap.AssignerID.String()+"not found")
+			return
+		}
+		err := cap.Verify(appCert.Certificate.PublicKey.(*rsa.PublicKey))
+		if err != nil {
+			c.JSON(http.StatusBadRequest, "verify failed")
+			return
+		}
 		if !caps.Contains(&cap) {
 			caps.Add(&cap)
 		}
@@ -94,6 +140,18 @@ func postCapabilityRequest(c *gin.Context) {
 	req := &capability.CapabilityRequest{}
 	if err := c.ShouldBindJSON(req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	appCert := appCerts.GetByID(req.RequesterID)
+	if appCert == nil {
+		c.JSON(http.StatusBadRequest, "appCert "+req.RequesterID.String()+"not found")
+		return
+	}
+
+	err := req.Verify(appCert.Certificate.PublicKey.(*rsa.PublicKey))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "verify failed")
 		return
 	}
 
@@ -198,7 +256,9 @@ func postCapabilityRequestGrantManually(c *gin.Context) {
 		return
 	}
 
-	grantCap := cap.GetGrantedCap(config.cpID, capReq)
+	capDelegatedToUser := cap.GetDelegatedCapability(config.cpID, config.userID)
+	grantedCaps.Add(capDelegatedToUser)
+	grantCap := capDelegatedToUser.GetGrantedCap(config.userID, capReq)
 
 	alreadyGrantedCaps := grantedCaps.Where(func(c1 *capability.Capability) bool {
 		return c1.AuthorizeCapabilityID == grantCap.AuthorizeCapabilityID && c1.CapabilityValue == grantCap.CapabilityValue

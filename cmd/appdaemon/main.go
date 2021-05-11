@@ -1,6 +1,9 @@
 package main
 
 import (
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -31,6 +34,11 @@ var device *app.Device
 var appInfo *app.AppInfo
 var grantedCapabilities *capability.CapabilityCollection = capability.NewCapabilityCollection()
 var ovsInfo *ofswitch.OvsInfo
+var certificate *x509.Certificate
+var privateKey *rsa.PrivateKey
+
+var cpCert *capability.AppCertificate
+var userCert *capability.AppCertificate
 
 var tempAllowed = false
 var humidAllowed = false
@@ -44,6 +52,24 @@ func main() {
 
 	pkgInfo, err := pkg.OpenPackageInfo(args[0])
 	if err != nil {
+		panic(err)
+	}
+
+	certBytes, err := capability.ReadCertificateWithoutDecode(pkgInfo.CertificatePath)
+	if err != nil {
+		fmt.Printf("Failed %v\n", err)
+		panic(err)
+	}
+
+	certificate, err = capability.DecodeCertificate(certBytes)
+	if err != nil {
+		fmt.Printf("Failed %v\n", err)
+		panic(err)
+	}
+
+	privateKey, err = capability.ReadPrivateKey(pkgInfo.PrivateKeyPath)
+	if err != nil {
+		fmt.Printf("Failed %v\n", err)
 		panic(err)
 	}
 
@@ -71,9 +97,17 @@ func main() {
 			for idx := range pkgInfo.Capabilities {
 				pkgInfo.Capabilities[idx].AppID = appID
 				pkgInfo.Capabilities[idx].AssignerID = appID
+				err = pkgInfo.Capabilities[idx].Sign(privateKey)
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 			for idx := range pkgInfo.CapabilityRequests {
 				pkgInfo.CapabilityRequests[idx].RequesterID = appID
+				err = pkgInfo.CapabilityRequests[idx].Sign(privateKey)
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 
 			device, err = getAppDevice(appID, pepUrl)
@@ -90,6 +124,29 @@ func main() {
 				fmt.Println(device)
 			}
 
+			certBase64 := base64.StdEncoding.EncodeToString(certBytes)
+			appCert := capability.AppCertificate{
+				AppID:             appID,
+				CertificateString: certBase64,
+			}
+			_, err = capability.SendContentsToCP(cpUrl+"/app/cert", appCert)
+			if err != nil {
+				fmt.Println(err)
+				panic(err)
+			}
+
+			cpCert, err = getCertificate(cpUrl + "/app/cpCert")
+			if err != nil {
+				fmt.Println(err)
+				panic(err)
+			}
+
+			userCert, err = getCertificate(cpUrl + "/app/userCert")
+			if err != nil {
+				fmt.Println(err)
+				panic(err)
+			}
+
 			fmt.Printf("DeviceLinkName:%v ACLLinkName:%v\n", appInfo.DeviceLinkName, appInfo.ACLLinkName)
 			go func() {
 				for {
@@ -101,6 +158,20 @@ func main() {
 
 					for idx := range grantedCaps {
 						grantedCap := grantedCaps[idx]
+						if grantedCap.AssignerID == cpCert.AppID {
+							if grantedCap.Verify(cpCert.Certificate.PublicKey.(*rsa.PublicKey)) != nil {
+								fmt.Printf("error: Failed to verify %v\n", grantedCap.CapabilityID)
+								continue
+							}
+						} else if grantedCap.AssignerID == userCert.AppID {
+							if grantedCap.Verify(userCert.Certificate.PublicKey.(*rsa.PublicKey)) != nil {
+								fmt.Printf("error: Failed to verify %v\n", grantedCap.CapabilityID)
+								continue
+							}
+						} else {
+							fmt.Printf("Unexpected AssignerID %v\n", grantedCap.AssignerID)
+							continue
+						}
 						if grantedCapabilities.Contains(grantedCap) {
 							continue
 						}
@@ -294,6 +365,30 @@ func getAppDevice(appID uuid.UUID, url string) (*app.Device, error) {
 	}
 
 	return &device, nil
+}
+
+func getCertificate(url string) (*capability.AppCertificate, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	respByte, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	appCert := capability.AppCertificate{}
+	err = json.Unmarshal(respByte, &appCert)
+	if err != nil {
+		return nil, err
+	}
+
+	err = appCert.Decode()
+	if err != nil {
+		return nil, err
+	}
+
+	return &appCert, nil
 }
 
 func getOvsInfo(url string) (*ofswitch.OvsInfo, error) {

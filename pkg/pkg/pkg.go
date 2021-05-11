@@ -15,6 +15,8 @@ import (
 type PackageInfo struct {
 	PkgPath            string
 	UnpackedPkgPath    string
+	CertificatePath    string
+	PrivateKeyPath     string
 	MetaInfo           PackageMetaInfo
 	Capabilities       capability.CapabilitySlice
 	CapabilityRequests capability.CapabilityRequestSlice

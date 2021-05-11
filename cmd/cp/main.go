@@ -1,6 +1,9 @@
 package main
 
 import (
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -13,7 +16,13 @@ import (
 )
 
 type CPConfig struct {
-	cpID uuid.UUID
+	cpID        uuid.UUID
+	userID      uuid.UUID
+	caCert      *x509.Certificate
+	cpPrivKey   *rsa.PrivateKey
+	userPrivKey *rsa.PrivateKey
+	cpCert      capability.AppCertificate
+	userCert    capability.AppCertificate
 }
 
 func loadCPConfig() CPConfig {
@@ -21,8 +30,54 @@ func loadCPConfig() CPConfig {
 	if err != nil {
 		panic(err)
 	}
+	userId, err := uuid.NewRandom()
+	if err != nil {
+		panic(err)
+	}
+
+	caCert, err := capability.ReadCertificate("/home/naoki/CREBAS/test/keys/ca/test-ca.crt")
+	if err != nil {
+		panic(err)
+	}
+
+	cpPrivKey, err := capability.ReadPrivateKey("/home/naoki/CREBAS/test/keys/cp/test-cp.key")
+	if err != nil {
+		panic(err)
+	}
+
+	userPrivKey, err := capability.ReadPrivateKey("/home/naoki/CREBAS/test/keys/user/test-user.key")
+	if err != nil {
+		panic(err)
+	}
+
+	cpCertBytes, err := capability.ReadCertificateWithoutDecode("/home/naoki/CREBAS/test/keys/cp/test-cp.crt")
+	if err != nil {
+		panic(err)
+	}
+	cpCertBase64 := base64.StdEncoding.EncodeToString(cpCertBytes)
+	cpCert := capability.AppCertificate{
+		AppID:             id,
+		CertificateString: cpCertBase64,
+	}
+
+	userCertBytes, err := capability.ReadCertificateWithoutDecode("/home/naoki/CREBAS/test/keys/user/test-user.crt")
+	if err != nil {
+		panic(err)
+	}
+	userCertBase64 := base64.StdEncoding.EncodeToString(userCertBytes)
+	userCert := capability.AppCertificate{
+		AppID:             userId,
+		CertificateString: userCertBase64,
+	}
+
 	cpConfig := CPConfig{
-		cpID: id,
+		cpID:        id,
+		userID:      userId,
+		caCert:      caCert,
+		cpPrivKey:   cpPrivKey,
+		userPrivKey: userPrivKey,
+		cpCert:      cpCert,
+		userCert:    userCert,
 	}
 
 	return cpConfig

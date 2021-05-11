@@ -1,11 +1,18 @@
 package main
 
 import (
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/naoki9911/CREBAS/pkg/app"
 	"github.com/naoki9911/CREBAS/pkg/capability"
 	"github.com/naoki9911/CREBAS/pkg/netlinkext"
@@ -25,8 +32,17 @@ var extAddrPool = &ofswitch.IP4AddrPool{}
 var controller = gofc.NewOFController()
 var dnsServer = "8.8.8.8:53"
 var pepConfig = NewConfig()
+var pepID uuid.UUID
+var certificate *x509.Certificate
+var privateKey *rsa.PrivateKey
+
+var cpCert *capability.AppCertificate
+var userCert *capability.AppCertificate
+
+const cpUrl = "http://localhost:8081"
 
 func main() {
+	configureCredentials()
 	startOFController()
 	err := prepareNetwork()
 	if err != nil {
@@ -44,6 +60,75 @@ func main() {
 	go startDNSServer(aclOfs)
 	go StartDHCPServer()
 	StartAPIServer()
+}
+
+func configureCredentials() {
+	pepID, _ = uuid.NewRandom()
+
+	certBytes, err := capability.ReadCertificateWithoutDecode("/home/naoki/CREBAS/test/keys/pep/test-pep.crt")
+	if err != nil {
+		fmt.Printf("Failed %v\n", err)
+		panic(err)
+	}
+
+	certificate, err = capability.DecodeCertificate(certBytes)
+	if err != nil {
+		fmt.Printf("Failed %v\n", err)
+		panic(err)
+	}
+
+	privateKey, err = capability.ReadPrivateKey("/home/naoki/CREBAS/test/keys/pep/test-pep.key")
+	if err != nil {
+		fmt.Printf("Failed %v\n", err)
+		panic(err)
+	}
+
+	certBase64 := base64.StdEncoding.EncodeToString(certBytes)
+	appCert := capability.AppCertificate{
+		AppID:             pepID,
+		CertificateString: certBase64,
+	}
+	_, err = capability.SendContentsToCP(cpUrl+"/app/cert", appCert)
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+
+	cpCert, err = getCertificate(cpUrl + "/app/cpCert")
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+
+	userCert, err = getCertificate(cpUrl + "/app/userCert")
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
+}
+
+func getCertificate(url string) (*capability.AppCertificate, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	respByte, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	appCert := capability.AppCertificate{}
+	err = json.Unmarshal(respByte, &appCert)
+	if err != nil {
+		return nil, err
+	}
+
+	err = appCert.Decode()
+	if err != nil {
+		return nil, err
+	}
+
+	return &appCert, nil
 }
 
 func startOFController() {
@@ -159,6 +244,8 @@ func prepareTestPkg() error {
 	pkg1.CapabilityRequests = append(pkg1.CapabilityRequests, capReqND1)
 	pkg1.CapabilityRequests = append(pkg1.CapabilityRequests, capReqND2)
 	pkg1.CapabilityRequests = append(pkg1.CapabilityRequests, capReqND3)
+	pkg1.PrivateKeyPath = "/home/naoki/CREBAS/test/keys/virt-dev-1/test-virt-dev-1.key"
+	pkg1.CertificatePath = "/home/naoki/CREBAS/test/keys/virt-dev-1/test-virt-dev-1.crt"
 	proc1, err := app.NewLinuxProcessFromPkgInfo(pkg1)
 	if err != nil {
 		return err
@@ -204,6 +291,8 @@ func prepareTestPkg() error {
 	pkg2.Capabilities = append(pkg2.Capabilities, capND)
 	pkg2.Capabilities = append(pkg2.Capabilities, capTemp)
 	pkg2.Capabilities = append(pkg2.Capabilities, capHumid)
+	pkg1.PrivateKeyPath = "/home/naoki/CREBAS/test/keys/virt-dev-2/test-virt-dev-2.key"
+	pkg1.CertificatePath = "/home/naoki/CREBAS/test/keys/virt-dev-2/test-virt-dev-2.crt"
 
 	proc2, err := app.NewLinuxProcessFromPkgInfo(pkg2)
 	if err != nil {

@@ -28,11 +28,9 @@ type Capability struct {
 
 // CapabilityAttributeBasedPolicy is a condition for Capability
 type CapabilityAttributeBasedPolicy struct {
-	Condition              string    `json:"condition"`
-	RequesterAttribute     string    `json:"requesterAttribute"`
-	RequesterDeviceID      uuid.UUID `json:"requesterDeviceID,omitempty"`
-	RequesterVendorID      uuid.UUID `json:"requesterVendorID,omitempty"`
-	RequestCapabilityValue string    `json:"requestCapabilityValue,omitempty"`
+	RequesterAttribute string    `json:"requesterAttribute"`
+	RequesterDeviceID  uuid.UUID `json:"requesterDeviceID,omitempty"`
+	RequesterVendorID  uuid.UUID `json:"requesterVendorID,omitempty"`
 }
 
 // CapabilityRequest is a request for Capability
@@ -40,6 +38,8 @@ type CapabilityRequest struct {
 	RequestID              uuid.UUID            `json:"requestID"`
 	RequesterID            uuid.UUID            `json:"requesterID"`
 	RequesteeID            uuid.UUID            `json:"requesteeID"`
+	DeviceID               uuid.UUID            `json:"deviceID"`
+	VendorID               uuid.UUID            `json:"vendorID"`
 	RequestCapabilityName  string               `json:"requestCapability"`
 	RequestCapabilityValue string               `json:"requestCapabilityValue"`
 	RequestSignature       CapabilitySignature  `json:"requestSignature"`
@@ -94,8 +94,11 @@ func NewCreateSkeltonCapabilityRequest() *CapabilityRequest {
 	cap.RequestID = id
 	id, _ = uuid.NewRandom()
 	cap.RequesterID = id
+	cap.DeviceID = id
 	id, _ = uuid.NewRandom()
 	cap.RequesteeID = id
+	id, _ = uuid.NewRandom()
+	cap.VendorID = id
 	id, _ = uuid.NewRandom()
 	cap.CapabilityID = id
 	cap.RequestCapabilityName = "test-cap"
@@ -178,6 +181,32 @@ func (cap *Capability) getExternalCommunicationGrantedCap(cpID uuid.UUID, capReq
 	return &grantedCap
 }
 
+func (cap *Capability) GetDelegatedCapability(assignerID uuid.UUID, assigneeID uuid.UUID) *Capability {
+	capID, _ := uuid.NewRandom()
+	grantedCap := Capability{
+		CapabilityID:          capID,
+		AssignerID:            assignerID,
+		AssigneeID:            assigneeID,
+		AppID:                 cap.AppID,
+		CapabilityName:        cap.CapabilityName,
+		CapabilityValue:       cap.CapabilityValue,
+		AuthorizeCapabilityID: cap.CapabilityID,
+		GrantPolicy: CapabilityAttributeBasedPolicy{
+			RequesterAttribute: cap.GrantPolicy.RequesterAttribute,
+			RequesterDeviceID:  cap.GrantPolicy.RequesterDeviceID,
+			RequesterVendorID:  cap.GrantPolicy.RequesterVendorID,
+		},
+		CapabilitySignature: CapabilitySignature{
+			SignerID:  assignerID,
+			SigneeID:  assigneeID,
+			Signature: "",
+		},
+		GrantCondition: "manual",
+	}
+
+	return &grantedCap
+}
+
 func GetUserAndManualGrantedCap(caps *CapabilityCollection, cpID uuid.UUID, capReq *CapabilityRequest, userPolicies *UserGrantPolicyCollection) CapabilitySlice {
 	candidateCaps := caps.Where(func(a *Capability) bool {
 		return a.CapabilityName == capReq.RequestCapabilityName
@@ -201,6 +230,23 @@ func GetUserAndManualGrantedCap(caps *CapabilityCollection, cpID uuid.UUID, capR
 				continue
 			}
 			grantedCaps = append(grantedCaps, grantedCap)
+		} else if cap.GrantCondition == "conditional" {
+			if cap.GrantPolicy.RequesterAttribute == "DeviceID" &&
+				cap.GrantPolicy.RequesterDeviceID == capReq.DeviceID {
+				grantedCap := cap.GetGrantedCap(cpID, capReq)
+				if grantedCap == nil {
+					continue
+				}
+				grantedCaps = append(grantedCaps, grantedCap)
+			} else if cap.GrantPolicy.RequesterAttribute == "VendorID" &&
+				cap.GrantPolicy.RequesterVendorID == capReq.VendorID {
+				grantedCap := cap.GetGrantedCap(cpID, capReq)
+				if grantedCap == nil {
+					continue
+				}
+				grantedCaps = append(grantedCaps, grantedCap)
+
+			}
 		}
 	}
 
