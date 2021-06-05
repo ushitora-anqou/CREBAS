@@ -291,8 +291,8 @@ func prepareTestPkg() error {
 	pkg2.Capabilities = append(pkg2.Capabilities, capND)
 	pkg2.Capabilities = append(pkg2.Capabilities, capTemp)
 	pkg2.Capabilities = append(pkg2.Capabilities, capHumid)
-	pkg1.PrivateKeyPath = "/home/naoki/CREBAS/test/keys/virt-dev-2/test-virt-dev-2.key"
-	pkg1.CertificatePath = "/home/naoki/CREBAS/test/keys/virt-dev-2/test-virt-dev-2.crt"
+	pkg2.PrivateKeyPath = "/home/naoki/CREBAS/test/keys/virt-dev-2/test-virt-dev-2.key"
+	pkg2.CertificatePath = "/home/naoki/CREBAS/test/keys/virt-dev-2/test-virt-dev-2.crt"
 
 	proc2, err := app.NewLinuxProcessFromPkgInfo(pkg2)
 	if err != nil {
