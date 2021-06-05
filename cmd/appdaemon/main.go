@@ -237,7 +237,6 @@ func procCapability(appID uuid.UUID, pkgInfo *pkg.PackageInfo, cpUrl string) (ca
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println(string(capsByte))
 		var grantedCap capability.CapReqResponse
 		err = json.Unmarshal(capsByte, &grantedCap)
 		if err != nil {
