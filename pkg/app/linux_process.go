@@ -141,16 +141,23 @@ func (p *LinuxProcess) ID() uuid.UUID {
 
 // GetAppInfo returns appInfo
 func (p *LinuxProcess) GetAppInfo() *AppInfo {
-	appInfo := AppInfo{
-		Id:                      p.id,
-		ACLLinkName:             p.ACLLink.GetLink().Attrs().Name,
-		ACLLinkPeerHWAddress:    p.ACLLink.PeerHWAddr.String(),
-		DeviceLinkName:          p.DeviceLink.GetLink().Attrs().Name,
-		DeviceLinkPeerHWAddress: p.DeviceLink.PeerHWAddr.String(),
-		Server:                  p.pkgInfo.Server,
+	if p.ACLLink == nil || p.DeviceLink == nil {
+		appInfo := AppInfo{
+			Id: p.id,
+		}
+		return &appInfo
+	} else {
+		appInfo := AppInfo{
+			Id:                      p.id,
+			ACLLinkName:             p.ACLLink.GetLink().Attrs().Name,
+			ACLLinkPeerHWAddress:    p.ACLLink.PeerHWAddr.String(),
+			DeviceLinkName:          p.DeviceLink.GetLink().Attrs().Name,
+			DeviceLinkPeerHWAddress: p.DeviceLink.PeerHWAddr.String(),
+			Server:                  p.pkgInfo.Server,
+		}
+		return &appInfo
 	}
 
-	return &appInfo
 }
 
 // AddLink adds link
