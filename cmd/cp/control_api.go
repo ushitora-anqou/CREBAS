@@ -165,6 +165,7 @@ func postCapabilityRequest(c *gin.Context) {
 
 	for idx := range grantCaps {
 		grantCap := grantCaps[idx]
+		grantCap.Sign(config.cpPrivKey)
 		alreadyGrantedCaps := grantedCaps.Where(func(c1 *capability.Capability) bool {
 			return c1.AuthorizeCapabilityID == grantCap.AuthorizeCapabilityID && c1.CapabilityValue == grantCap.CapabilityValue
 		})
@@ -259,6 +260,7 @@ func postCapabilityRequestGrantManually(c *gin.Context) {
 	capDelegatedToUser := cap.GetDelegatedCapability(config.cpID, config.userID)
 	grantedCaps.Add(capDelegatedToUser)
 	grantCap := capDelegatedToUser.GetGrantedCap(config.userID, capReq)
+	grantCap.Sign(config.userPrivKey)
 
 	alreadyGrantedCaps := grantedCaps.Where(func(c1 *capability.Capability) bool {
 		return c1.AuthorizeCapabilityID == grantCap.AuthorizeCapabilityID && c1.CapabilityValue == grantCap.CapabilityValue

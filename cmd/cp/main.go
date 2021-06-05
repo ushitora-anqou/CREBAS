@@ -59,6 +59,10 @@ func loadCPConfig() CPConfig {
 		AppID:             id,
 		CertificateString: cpCertBase64,
 	}
+	err = cpCert.Decode()
+	if err != nil {
+		panic(err)
+	}
 
 	userCertBytes, err := capability.ReadCertificateWithoutDecode("/home/naoki/CREBAS/test/keys/user/test-user.crt")
 	if err != nil {
@@ -68,6 +72,10 @@ func loadCPConfig() CPConfig {
 	userCert := capability.AppCertificate{
 		AppID:             userId,
 		CertificateString: userCertBase64,
+	}
+	err = userCert.Decode()
+	if err != nil {
+		panic(err)
 	}
 
 	cpConfig := CPConfig{
