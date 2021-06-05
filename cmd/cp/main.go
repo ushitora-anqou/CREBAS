@@ -89,7 +89,7 @@ func main() {
 	log.Printf("info: Starting CapabilityProvider(cpID: %v)", config.cpID)
 
 	router := setupRouter()
-	addTestCaps(router)
+	//addTestCaps(router)
 	router.Run("0.0.0.0:8081")
 	//StartAPIServer()
 }
