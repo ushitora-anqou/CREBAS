@@ -55,6 +55,8 @@ func main() {
 		panic(err)
 	}
 
+	fmt.Printf("CertificatePath: %v\n", pkgInfo.CertificatePath)
+	fmt.Printf("PrivateKeyPath : %v\n", pkgInfo.PrivateKeyPath)
 	certBytes, err := capability.ReadCertificateWithoutDecode(pkgInfo.CertificatePath)
 	if err != nil {
 		fmt.Printf("Failed %v\n", err)
