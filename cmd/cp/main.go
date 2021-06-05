@@ -97,11 +97,15 @@ func main() {
 func addTestCaps(r *gin.Engine) {
 
 	cap1 := capability.NewCreateSkeltonCapability()
+	cap1.AssigneeID = config.cpID
+	cap1.AssignerID = config.cpID
 	cap1.CapabilityName = capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION
 	cap1.CapabilityValue = "*.hoge.example.com"
 	cap1.GrantCondition = "always"
 
 	cap2 := capability.NewCreateSkeltonCapability()
+	cap2.AssigneeID = config.cpID
+	cap2.AssignerID = config.cpID
 	cap2.CapabilityName = capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION
 	cap2.CapabilityValue = "*.example.com"
 	cap2.GrantCondition = "none"
