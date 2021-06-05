@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -178,6 +179,7 @@ func TestAutoGrant(t *testing.T) {
 	assert.Equal(t, capReq.RequestID, capReqRes.Request.RequestID)
 	assert.Equal(t, len(capReqRes.GrantedCapabilities), 1)
 	grantedCap := capReqRes.GrantedCapabilities[0]
+	assert.Equal(t, nil, grantedCap.Verify(config.cpCert.Certificate.PublicKey.(*rsa.PublicKey)))
 	assert.Equal(t, grantedCap.CapabilityName, capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION)
 	assert.Equal(t, grantedCap.CapabilityValue, capReq.RequestCapabilityValue)
 	assert.Equal(t, grantedCap.AuthorizeCapabilityID, cap1.CapabilityID)
@@ -260,6 +262,7 @@ func TestAutoGrant2(t *testing.T) {
 	assert.Equal(t, capReq.RequestID, capReqRes.Request.RequestID)
 	assert.Equal(t, len(capReqRes.GrantedCapabilities), 1)
 	grantedCap := capReqRes.GrantedCapabilities[0]
+	assert.Equal(t, nil, grantedCap.Verify(config.cpCert.Certificate.PublicKey.(*rsa.PublicKey)))
 	assert.Equal(t, grantedCap.CapabilityName, capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION)
 	assert.Equal(t, grantedCap.CapabilityValue, capReq.RequestCapabilityValue)
 	assert.Equal(t, grantedCap.AuthorizeCapabilityID, cap1.CapabilityID)
@@ -341,6 +344,7 @@ func TestAutoGrant3(t *testing.T) {
 	assert.Equal(t, capReq.RequestID, capReqRes.Request.RequestID)
 	assert.Equal(t, len(capReqRes.GrantedCapabilities), 1)
 	grantedCap := capReqRes.GrantedCapabilities[0]
+	assert.Equal(t, nil, grantedCap.Verify(config.cpCert.Certificate.PublicKey.(*rsa.PublicKey)))
 	assert.Equal(t, grantedCap.CapabilityName, capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION)
 	assert.Equal(t, grantedCap.CapabilityValue, capReq.RequestCapabilityValue)
 	assert.Equal(t, grantedCap.AuthorizeCapabilityID, cap1.CapabilityID)
@@ -416,6 +420,7 @@ func TestManualGrant(t *testing.T) {
 	assert.Equal(t, capReq.RequestID, capReqRes.Request.RequestID)
 	assert.Equal(t, len(capReqRes.GrantedCapabilities), 1)
 	grantedCap := capReqRes.GrantedCapabilities[0]
+	assert.Equal(t, nil, grantedCap.Verify(config.cpCert.Certificate.PublicKey.(*rsa.PublicKey)))
 	assert.Equal(t, grantedCap.CapabilityName, capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION)
 	assert.Equal(t, grantedCap.CapabilityValue, capReq.RequestCapabilityValue)
 	assert.Equal(t, grantedCap.AuthorizeCapabilityID, cap1.CapabilityID)
@@ -456,6 +461,7 @@ func TestManualGrant(t *testing.T) {
 	})
 	assert.Equal(t, len(testCaps), 1)
 	grantedCap = testCaps[0]
+	assert.Equal(t, nil, grantedCap.Verify(config.userCert.Certificate.PublicKey.(*rsa.PublicKey)))
 	assert.Equal(t, grantedCap.CapabilityName, capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION)
 	assert.Equal(t, grantedCap.CapabilityValue, capReq.RequestCapabilityValue)
 	assert.Equal(t, grantedCap.AssignerID, config.userID)
@@ -526,6 +532,7 @@ func TestUserGrant(t *testing.T) {
 	assert.Equal(t, capReq.RequestID, capReqRes.Request.RequestID)
 	assert.Equal(t, len(capReqRes.GrantedCapabilities), 1)
 	grantedCap := capReqRes.GrantedCapabilities[0]
+	assert.Equal(t, nil, grantedCap.Verify(config.cpCert.Certificate.PublicKey.(*rsa.PublicKey)))
 	assert.Equal(t, grantedCap.CapabilityName, capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION)
 	assert.Equal(t, grantedCap.CapabilityValue, capReq.RequestCapabilityValue)
 	assert.Equal(t, grantedCap.AuthorizeCapabilityID, cap1.CapabilityID)
@@ -577,6 +584,7 @@ func TestUserGrant(t *testing.T) {
 	})
 	assert.Equal(t, len(testCaps), 1)
 	grantedCap = testCaps[0]
+	assert.Equal(t, nil, grantedCap.Verify(config.cpCert.Certificate.PublicKey.(*rsa.PublicKey)))
 	assert.Equal(t, grantedCap.CapabilityName, capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION)
 	assert.Equal(t, grantedCap.CapabilityValue, capReq.RequestCapabilityValue)
 	assert.Equal(t, grantedCap.AuthorizeCapabilityID, cap2.CapabilityID)
@@ -648,6 +656,7 @@ func TestUserGrant2(t *testing.T) {
 	assert.Equal(t, capReq.RequestID, capReqRes.Request.RequestID)
 	assert.Equal(t, len(capReqRes.GrantedCapabilities), 1)
 	grantedCap := capReqRes.GrantedCapabilities[0]
+	assert.Equal(t, nil, grantedCap.Verify(config.cpCert.Certificate.PublicKey.(*rsa.PublicKey)))
 	assert.Equal(t, grantedCap.CapabilityName, capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION)
 	assert.Equal(t, grantedCap.CapabilityValue, capReq.RequestCapabilityValue)
 	assert.Equal(t, grantedCap.AuthorizeCapabilityID, cap1.CapabilityID)
@@ -760,6 +769,7 @@ func TestPendingCapReqAndDelegatedCap(t *testing.T) {
 	assert.Equal(t, capReq.RequestID, capReqRes.Request.RequestID)
 	assert.Equal(t, len(capReqRes.GrantedCapabilities), 1)
 	grantedCap := capReqRes.GrantedCapabilities[0]
+	assert.Equal(t, nil, grantedCap.Verify(config.cpCert.Certificate.PublicKey.(*rsa.PublicKey)))
 	assert.Equal(t, grantedCap.CapabilityName, capability.CAPABILITY_NAME_EXTERNAL_COMMUNICATION)
 	assert.Equal(t, grantedCap.CapabilityValue, capReq.RequestCapabilityValue)
 	assert.Equal(t, grantedCap.AuthorizeCapabilityID, cap1.CapabilityID)
