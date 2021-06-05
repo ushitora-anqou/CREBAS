@@ -162,12 +162,12 @@ func main() {
 						grantedCap := grantedCaps[idx]
 						if grantedCap.AssignerID == cpCert.AppID {
 							if grantedCap.Verify(cpCert.Certificate.PublicKey.(*rsa.PublicKey)) != nil {
-								fmt.Printf("error: Failed to verify %v\n", grantedCap.CapabilityID)
+								fmt.Printf("error: Failed to verify %v with cp cert\n", grantedCap.CapabilityID)
 								continue
 							}
 						} else if grantedCap.AssignerID == userCert.AppID {
 							if grantedCap.Verify(userCert.Certificate.PublicKey.(*rsa.PublicKey)) != nil {
-								fmt.Printf("error: Failed to verify %v\n", grantedCap.CapabilityID)
+								fmt.Printf("error: Failed to verify %v with user cert\n", grantedCap.CapabilityID)
 								continue
 							}
 						} else {
@@ -178,7 +178,7 @@ func main() {
 							continue
 						}
 						grantedCapabilities.Add(grantedCap)
-						fmt.Printf("Enforce Cap %v\n", grantedCap)
+						fmt.Printf("Enforce Cap %v\n", grantedCap.CapabilityID)
 						_, err = capability.SendContentsToCP(pepUrl+"/app/"+appID.String()+"/cap", grantedCap)
 						if err != nil {
 							fmt.Printf("error: failed to send granted cap %v\n", err)
